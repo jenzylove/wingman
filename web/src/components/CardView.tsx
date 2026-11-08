@@ -186,7 +186,7 @@ export default function CardView({ card, shareable = true }: { card: Card; share
       </div>
 
       <div className="mt-10 max-w-3xl">
-        <CoverageMeter pct={card.coverage.earlyVolumeAttributedPct} note={card.coverage.note} />
+        <CoverageMeter pct={card.coverage.earlyVolumeAttributedPct} note={card.coverage.note} refName={typeof card.call.postedAt === "number" ? "the post" : "the caller's first buy"} />
       </div>
 
       {/* flight strip */}

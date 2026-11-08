@@ -2,7 +2,7 @@
 
 import CountUp from "./CountUp";
 
-export default function CoverageMeter({ pct, note }: { pct: number; note?: string }) {
+export default function CoverageMeter({ pct, note, refName = "the post" }: { pct: number; note?: string; refName?: string }) {
   const v = Math.max(0, Math.min(100, pct));
   const segments = 40;
   const lit = Math.round((v / 100) * segments);
@@ -14,7 +14,7 @@ export default function CoverageMeter({ pct, note }: { pct: number; note?: strin
           <span className="font-display text-[15px] font-semibold text-ink">
             <CountUp value={v} format={(n) => `${Math.round(n)}%`} />
           </span>{" "}
-          of buy volume before the post to known wallets.
+          of buy volume before {refName} to known wallets.
         </p>
       </div>
       <div className="mt-3 flex h-3 gap-[3px]" role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(v)} aria-label="Coverage of early buy volume">
