@@ -180,23 +180,28 @@ export default function Home() {
               Wingman can sell this one token and send the proceeds only to you. It cannot withdraw or touch anything else.
             </p>
             <ul className="mt-6 space-y-3 text-[14px] text-ink-2">
-              <li><span className="text-ink">Base:</span> a session permission on your smart wallet, scoped to selling that token.</li>
+              <li><span className="text-ink">Base:</span> you approve exactly your position to the Wingman contract, with a USDC floor the sale can never go below. Its code only sells and only pays you.</li>
               <li><span className="text-ink">Solana:</span> you sign the exit sale ahead of time. Wingman holds it and sends it only when a watched wallet sells. It sells to SOL into your own wallet.</li>
               <li>Cancel any time from My exits.</li>
             </ul>
           </div>
           <div className="rounded-2xl bg-bg-2 p-6 sm:p-8">
-            <p className="text-[11px] uppercase tracking-[0.18em] text-ink-3">Example receipt</p>
+            <p className="text-[11px] uppercase tracking-[0.18em] text-ink-3">Real receipt · Base mainnet · our own test wallets</p>
             <div className="mt-4 font-display text-[22px] leading-snug sm:text-[26px]">
               <p>
-                Crew started selling <span className="tabular-nums text-red-ink">12:03:41</span>.
+                Crew started selling <span className="tabular-nums text-red-ink">21:24:37</span>.
               </p>
               <p>
-                You were out <span className="tabular-nums text-green-ink">12:03:43</span>.
+                You were out <span className="tabular-nums text-green-ink">21:24:41</span>.
               </p>
-              <p className="mt-3 text-green-ink">+18%</p>
+              <p className="mt-3 text-green-ink">4 seconds later, paid in USDC.</p>
             </div>
-            <p className="mt-6 text-[12px] text-ink-3">Every real receipt links the crew sell and your exit on the explorer.</p>
+            <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-ink-3">
+              <a className="underline underline-offset-2 hover:text-ink" href="https://basescan.org/tx/0x6e7c45d7c740316a49dc72378da58776889546f5565e1907acd441f1ed6f3451" target="_blank" rel="noreferrer">Crew sell tx</a>
+              <a className="underline underline-offset-2 hover:text-ink" href="https://basescan.org/tx/0x192ee870ee0aff8530e4c559a7b1491c80ba09ab914c2f4818a1b1678b6f98ab" target="_blank" rel="noreferrer">Wingman exit tx</a>
+              <a className="underline underline-offset-2 hover:text-ink" href="https://solscan.io/tx/24b66AKbtPdgr1BsAftWaURG3M8vc6nWYaxP85JDjqt7HyUJXwrz32MQuFmDyBbd3WkyYpVFxFSQMFhmVRYtMznc" target="_blank" rel="noreferrer">Same on Solana, also 4 seconds</a>
+            </div>
+            <p className="mt-6 text-[12px] text-ink-3">We ran these with our own wallets playing crew and rider. Every receipt links both transactions.</p>
           </div>
         </div>
       </Section>

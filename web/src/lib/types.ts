@@ -76,4 +76,5 @@ export interface ArmedExit {
   armTx?: string;
   trigger?: { wallet: string; tx: string; ts: number };
   exit?: { tx: string; ts: number; quoteOut: number; usdOut?: number };
+  selfTest?: boolean; // run with our own wallets as crew and rider
 }

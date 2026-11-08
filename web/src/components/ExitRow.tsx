@@ -63,6 +63,7 @@ export default function ExitRow({ x, showOwner = false, onChange }: { x: ArmedEx
           {s.label}
         </p>
         <p className="mt-1 text-[12px] text-ink-3">{chainName(x.chain)}</p>
+        {x.selfTest && <p className="mt-1 text-[11px] uppercase tracking-[0.14em] text-amber-ink">Our own test wallets</p>}
       </div>
 
       <div className="min-w-0">
