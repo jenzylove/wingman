@@ -15,7 +15,7 @@ const LINKS = [
 export default function Nav() {
   const path = usePathname();
   return (
-    <header className="sticky top-0 z-40 bg-[color-mix(in_srgb,var(--bg)_82%,transparent)] backdrop-blur-md hairline-b">
+    <header className="sticky top-0 z-40 bg-[color-mix(in_srgb,var(--bg)_96%,transparent)] hairline-b">
       <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4 sm:px-6">
         <Link href="/" aria-label="Wingman home" className="shrink-0">
           <Logo />

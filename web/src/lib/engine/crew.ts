@@ -121,6 +121,14 @@ export function score(
       verdictLine: `Insider wallets bought ${r(firstBuy)} and started selling ${r(Math.min(...sellsAfter.map((t) => t.ts)) - t0)}, coming out ${q(net)} ahead.`,
     };
   }
+  if (sells.length && !hasPostTime && firstSell !== undefined) {
+    return {
+      summary,
+      coverage,
+      verdict: net > 0 ? "sold_into_followers" : "exited",
+      verdictLine: `Insider wallets sold ${100 - stillHoldingPct}% within ${rel(firstSell, "").replace(/ (after|before) $/, "")} of the caller's first buy${net > 0 ? `, ${q(net)} ahead` : `, down ${q(net)}`}.`,
+    };
+  }
   if (sells.length) {
     return {
       summary,

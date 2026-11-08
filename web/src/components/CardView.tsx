@@ -28,7 +28,7 @@ function Stat({ label, children, sub, tone = "ink" }: { label: string; children:
   );
 }
 
-function OffsetStat({ label, offset, tone }: { label: string; offset?: number; tone: "red" | "amber" }) {
+function OffsetStat({ label, offset, tone, refName = "the post" }: { label: string; offset?: number; tone: "red" | "amber"; refName?: string }) {
   if (offset === undefined || offset === null) {
     return (
       <Stat label={label} sub="No trade seen from known wallets">
@@ -38,7 +38,7 @@ function OffsetStat({ label, offset, tone }: { label: string; offset?: number; t
   }
   const before = offset < 0;
   return (
-    <Stat label={label} tone={tone} sub={offset === 0 ? "Same second as the post" : before ? "before the post" : "after the post"}>
+    <Stat label={label} tone={tone} sub={offset === 0 ? `Same second as ${refName}` : before ? `before ${refName}` : `after ${refName}`}>
       <CountUp value={Math.abs(offset)} format={(n) => (offset === 0 ? "0s" : dur(n))} />
     </Stat>
   );
@@ -171,8 +171,8 @@ export default function CardView({ card, shareable = true }: { card: Card; share
 
       {/* numbers */}
       <div className="mt-12 grid grid-cols-2 gap-x-6 gap-y-8 hairline-t pt-8 lg:grid-cols-4">
-        <OffsetStat label="First insider buy" offset={summary.firstInsiderBuyOffset} tone="amber" />
-        <OffsetStat label="First insider sell" offset={summary.firstInsiderSellOffset} tone="red" />
+        <OffsetStat label="First insider buy" offset={summary.firstInsiderBuyOffset} tone="amber" refName={typeof card.call.postedAt === "number" ? "the post" : "the caller's first buy"} />
+        <OffsetStat label="First insider sell" offset={summary.firstInsiderSellOffset} tone="red" refName={typeof card.call.postedAt === "number" ? "the post" : "the caller's first buy"} />
         <Stat
           label="Insider net take"
           tone={net > 0 ? "red" : "ink"}
