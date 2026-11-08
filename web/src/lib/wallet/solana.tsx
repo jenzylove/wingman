@@ -11,6 +11,7 @@ interface PhantomProvider {
   connect(opts?: { onlyIfTrusted?: boolean }): Promise<{ publicKey: PublicKey }>;
   disconnect(): Promise<void>;
   signTransaction<T extends Transaction | VersionedTransaction>(tx: T): Promise<T>;
+  signAndSendTransaction<T extends Transaction | VersionedTransaction>(tx: T, opts?: { skipPreflight?: boolean }): Promise<{ signature: string; publicKey?: PublicKey }>;
   signMessage(message: Uint8Array, display?: "utf8" | "hex"): Promise<{ signature: Uint8Array; publicKey: PublicKey }>;
   on(event: "connect" | "disconnect" | "accountChanged", handler: (arg?: PublicKey | null) => void): void;
   removeListener?(event: string, handler: (arg?: PublicKey | null) => void): void;
@@ -37,6 +38,7 @@ export interface SolanaWallet {
   connect(): Promise<string | null>;
   disconnect(): Promise<void>;
   signTransaction<T extends Transaction | VersionedTransaction>(tx: T): Promise<T>;
+  signAndSendTransaction<T extends Transaction | VersionedTransaction>(tx: T): Promise<string>;
   signMessage(message: Uint8Array): Promise<Uint8Array>;
 }
 
@@ -101,6 +103,13 @@ export function SolanaWalletProvider({ children }: { children: React.ReactNode }
     return p.signTransaction(tx);
   }, []);
 
+  const signAndSendTransaction = useCallback(async <T extends Transaction | VersionedTransaction>(tx: T): Promise<string> => {
+    const p = getProvider();
+    if (!p || !p.publicKey) throw new Error("Connect a Solana wallet first.");
+    const r = await p.signAndSendTransaction(tx);
+    return r.signature;
+  }, []);
+
   const signMessage = useCallback(async (message: Uint8Array) => {
     const p = getProvider();
     if (!p || !p.publicKey) throw new Error("Connect a Solana wallet first.");
@@ -109,8 +118,8 @@ export function SolanaWalletProvider({ children }: { children: React.ReactNode }
   }, []);
 
   const value = useMemo<SolanaWallet>(
-    () => ({ available, publicKey, connecting, error, connect, disconnect, signTransaction, signMessage }),
-    [available, publicKey, connecting, error, connect, disconnect, signTransaction, signMessage],
+    () => ({ available, publicKey, connecting, error, connect, disconnect, signTransaction, signAndSendTransaction, signMessage }),
+    [available, publicKey, connecting, error, connect, disconnect, signTransaction, signAndSendTransaction, signMessage],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
