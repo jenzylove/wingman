@@ -1,0 +1,23 @@
+name: base keeper
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+concurrency:
+  group: base-keeper
+  cancel-in-progress: false
+jobs:
+  poll:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: Poll Base for crew sells every 4 seconds
+        env:
+          URL: ${{ vars.WINGMAN_URL }}
+          KEY: ${{ secrets.HOOK_SECRET }}
+        run: |
+          end=$((SECONDS + 290))
+          while [ $SECONDS -lt $end ]; do
+            curl -s -m 50 "$URL/api/cron/base?key=$KEY" | head -c 300; echo
+            sleep 4
+          done
