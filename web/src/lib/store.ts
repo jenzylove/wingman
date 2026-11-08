@@ -38,9 +38,9 @@ async function listRange(key: string, n = 50): Promise<string[]> {
   return storeEnabled() ? await redis(["LRANGE", key, 0, n - 1]) : (memLists.get(key) || []).slice(0, n);
 }
 
-export async function saveCard(card: Card) {
+export async function saveCard(card: Card, publicFeed = true) {
   await kvSet(`card:${card.id}`, card);
-  await listPush("cards", card.id);
+  if (publicFeed) await listPush("cards", card.id);
 }
 export const getCard = (id: string) => kvGet<Card>(`card:${id}`);
 export async function recentCards(n = 20): Promise<Card[]> {
@@ -67,11 +67,12 @@ export async function saveExit(e: ArmedExit) {
   }
 }
 export const getExit = (id: string) => kvGet<ArmedExit>(`exit:${id}`);
+// Pending exits are never listed: their ids are only known to whoever started them.
 export async function exitsOf(owner: string) {
-  return (await Promise.all((await listRange(`exits:${owner}`, 100)).map(getExit))).filter(Boolean) as ArmedExit[];
+  return ((await Promise.all((await listRange(`exits:${owner}`, 100)).map(getExit))).filter(Boolean) as ArmedExit[]).filter((e) => e.status !== "pending");
 }
 export async function recentExits(n = 50) {
-  return (await Promise.all((await listRange("exits", n)).map(getExit))).filter(Boolean) as ArmedExit[];
+  return ((await Promise.all((await listRange("exits", n)).map(getExit))).filter(Boolean) as ArmedExit[]).filter((e) => e.status !== "pending");
 }
 
 // Which armed exits depend on a wallet, so a webhook hit finds them fast.
@@ -84,4 +85,20 @@ export async function watchGet(wallet: string) {
 }
 export async function allWatched() {
   return [...new Set(await listRange("watched", 25000))];
+}
+
+// One winner per key: true only for the first caller within ttl seconds.
+export async function claimOnce(key: string, ttlSec = 600): Promise<boolean> {
+  if (storeEnabled()) return (await redis(["SET", key, "1", "NX", "EX", ttlSec])) === "OK";
+  if (mem.has(key)) return false;
+  mem.set(key, "1");
+  return true;
+}
+
+// Fixed window rate limit per key. Returns false when over the limit.
+export async function rateOk(key: string, limit: number, windowSec: number): Promise<boolean> {
+  if (!storeEnabled()) return true;
+  const n = await redis(["INCR", key]);
+  if (n === 1) await redis(["EXPIRE", key, windowSec]);
+  return n <= limit;
 }

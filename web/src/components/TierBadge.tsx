@@ -6,6 +6,7 @@ const STYLE: Record<Tier, string> = {
   public: "text-amber-ink ring-1 ring-amber",
   funded: "text-ink-2 ring-1 ring-line-2",
   behaviour: "text-ink-3 border border-dashed border-line-2",
+  early: "text-ink-3 ring-1 ring-line",
 };
 
 export default function TierBadge({ tier }: { tier: Tier }) {

@@ -15,7 +15,7 @@ export async function POST(req: Request) {
       if (!out) return NextResponse.json({ error: "No route to sell this token on Base right now." }, { status: 422 });
       return NextResponse.json({ floor: (BigInt(out) / 2n).toString(), quotedUsdc: out });
     }
-    if (b.action === "record") return NextResponse.json({ exit: await recordArm({ txHash: b.txHash, watch: b.watch || [], cardId: b.cardId }) });
+    if (b.action === "record") return NextResponse.json({ exit: await recordArm({ txHash: b.txHash, watch: b.watch || [], signature: b.signature, cardId: b.cardId }) });
     return NextResponse.json({ error: "Unknown action." }, { status: 400 });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);

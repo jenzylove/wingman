@@ -46,6 +46,25 @@ function toB64(tx: VersionedTransaction): string {
   return btoa(bin);
 }
 
+// Before the wallet pops up: only known programs, and the user is the only outside signer.
+const SOL_PROGRAMS = new Set([
+  "11111111111111111111111111111111",
+  "ComputeBudget111111111111111111111111111111",
+  "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+  "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+  "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL",
+  "JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUJoi5QNyVTaV4",
+  "SysvarRecentB1ockHashes11111111111111111111",
+]);
+function checkSolTx(tx: VersionedTransaction, owner: string) {
+  const keys = tx.message.staticAccountKeys.map((k) => k.toBase58());
+  if (keys[0] !== owner) throw new Error("This transaction isn't paid by your wallet. Not signing it.");
+  for (const ix of tx.message.compiledInstructions) {
+    const pid = keys[ix.programIdIndex];
+    if (!SOL_PROGRAMS.has(pid)) throw new Error(`This transaction calls an unexpected program (${pid.slice(0, 6)}). Not signing it.`);
+  }
+}
+
 export interface SolRideInput {
   mode: "ride" | "hold";
   owner: string;
@@ -70,7 +89,7 @@ export async function rideSolana(
   onStep("buy");
   const start =
     input.mode === "ride"
-      ? await solApi<{ id: string; tx: string; quotedTokens?: number | string }>({
+      ? await solApi<{ id: string; key: string; tx: string; quotedTokens?: number | string }>({
           action: "ride",
           owner: input.owner,
           mint: input.mint,
@@ -79,19 +98,21 @@ export async function rideSolana(
           watch: input.watch,
           cardId: input.cardId,
         })
-      : await solApi<{ id: string; tx: string }>({ action: "hold", owner: input.owner, mint: input.mint, watch: input.watch, cardId: input.cardId });
+      : await solApi<{ id: string; key: string; tx: string }>({ action: "hold", owner: input.owner, mint: input.mint, watch: input.watch, cardId: input.cardId });
+  checkSolTx(fromB64(start.tx), input.owner);
 
   const sig = await signer.signAndSendTransaction(fromB64(start.tx));
 
   onStep("locking");
-  const prep = await solApi<{ tx: string; quotedOutLamports?: number | string; minOutLamports?: number | string }>({ action: "prepare", id: start.id, sig });
+  const prep = await solApi<{ tx: string; quotedOutLamports?: number | string; minOutLamports?: number | string }>({ action: "prepare", id: start.id, key: start.key, sig });
+  checkSolTx(fromB64(prep.tx), input.owner);
 
   onStep("sign_exit");
   await beforeExitSign();
   const signed = await signer.signTransaction(fromB64(prep.tx));
 
   onStep("saving");
-  const done = await solApi<{ exit: ArmedExit }>({ action: "confirm", id: start.id, signedTx: toB64(signed) });
+  const done = await solApi<{ exit: ArmedExit }>({ action: "confirm", id: start.id, key: start.key, signedTx: toB64(signed) });
   return done.exit;
 }
 
@@ -99,17 +120,20 @@ export async function rideSolana(
 export async function cancelSolana(id: string, owner: string, signer: SolSigner): Promise<ArmedExit> {
   const r = await solApi<{ tx: string }>({ action: "cancel", id, owner });
   const sig = await signer.signAndSendTransaction(fromB64(r.tx));
-  const done = await solApi<{ exit: ArmedExit }>({ action: "cancelled", id, sig });
+  void sig;
+  const done = await solApi<{ exit: ArmedExit }>({ action: "cancelled", id });
   return done.exit;
 }
 
 // ---------------------------------------------------------------- Base
 
-import { getAccount, readContract, sendTransaction, waitForTransactionReceipt, writeContract } from "wagmi/actions";
-import { parseAbi, parseEther, type Hex } from "viem";
+import { getAccount, readContract, sendTransaction, signMessage, waitForTransactionReceipt, writeContract } from "wagmi/actions";
+import { decodeEventLog, parseAbi, parseEther, type Hex } from "viem";
+import { armMessage } from "@/lib/exits/message";
 import { wagmiConfig } from "@/lib/wallet/wagmi";
 
 const baseErc20 = parseAbi(["function balanceOf(address) view returns (uint256)", "function approve(address,uint256) returns (bool)"]);
+const armedEvent = parseAbi(["event Armed(uint256 indexed id, address indexed owner, address indexed token, uint256 amount, uint16 maxSlippageBps, uint256 minUsdcOut)"]);
 const armAbi = parseAbi(["function armWithFloor(address token, uint256 amount, uint16 maxSlippageBps, uint256 minUsdcOut) returns (uint256)"]);
 
 async function baseApi<T>(body: Record<string, unknown>): Promise<T> {
@@ -149,6 +173,8 @@ export async function rideBase(input: BaseRideInput, onStep: (s: RideStep) => vo
       ethWei: parseEther(String(input.eth)).toString(),
       slippageBps: input.slippageBps,
     });
+    // 0x AllowanceHolder on Base: the only contract we let the buy go to.
+    if (q.to.toLowerCase() !== "0x0000000000001ff3684f28c67538d4d072c22734") throw new Error("Unexpected swap contract. Not sending it.");
     const h = await sendTransaction(wagmiConfig, { to: q.to, data: q.data, value: BigInt(q.value), gas: q.gas ? BigInt(q.gas) * 2n : undefined });
     const rc = await waitForTransactionReceipt(wagmiConfig, { hash: h });
     if (rc.status !== "success") throw new Error("The buy didn't go through. Nothing was armed.");
@@ -167,8 +193,19 @@ export async function rideBase(input: BaseRideInput, onStep: (s: RideStep) => vo
     functionName: "armWithFloor",
     args: [token, amount, input.slippageBps ?? 1500, BigInt(floor)],
   });
-  await waitForTransactionReceipt(wagmiConfig, { hash: armHash });
+  const armRc = await waitForTransactionReceipt(wagmiConfig, { hash: armHash });
+  let armId: bigint | undefined;
+  for (const l of armRc.logs) {
+    if (l.address.toLowerCase() !== exit.toLowerCase()) continue;
+    try {
+      const ev = decodeEventLog({ abi: armedEvent, data: l.data, topics: l.topics });
+      if (ev.eventName === "Armed") armId = ev.args.id;
+    } catch {}
+  }
+  if (armId === undefined) throw new Error("The arm transaction didn't create an exit.");
   onStep("saving");
-  const done = await baseApi<{ exit: ArmedExit }>({ action: "record", txHash: armHash, watch: input.watch, cardId: input.cardId });
+  // A free signature (no gas): only you choose which wallets trigger your exit.
+  const signature = await signMessage(wagmiConfig, { message: armMessage(armId, input.watch) });
+  const done = await baseApi<{ exit: ArmedExit }>({ action: "record", txHash: armHash, watch: input.watch, signature, cardId: input.cardId });
   return done.exit;
 }

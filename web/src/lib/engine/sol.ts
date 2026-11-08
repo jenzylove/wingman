@@ -13,6 +13,8 @@ type HTx = {
   transactionError?: unknown;
   tokenTransfers?: { fromUserAccount: string; toUserAccount: string; mint: string; tokenAmount: number }[];
   nativeTransfers?: { fromUserAccount: string; toUserAccount: string; amount: number }[];
+  accountData?: { account: string; nativeBalanceChange: number }[];
+  fee?: number;
 };
 
 async function helius(path: string): Promise<HTx[]> {
@@ -58,22 +60,28 @@ export async function recentTxs(address: string, pages = 3): Promise<HTx[]> {
 // The trade the signer of this tx made in `mint`, if any.
 export function tradeOf(t: HTx, mint: string): Trade | null {
   const s = t.feePayer;
-  let tokIn = 0, tokOut = 0, sol = 0, usd = 0;
+  let tokIn = 0, tokOut = 0, sol = 0, usd = 0, wsol = 0;
   for (const x of t.tokenTransfers || []) {
     if (x.mint === mint) {
       if (x.toUserAccount === s) tokIn += x.tokenAmount;
       if (x.fromUserAccount === s) tokOut += x.tokenAmount;
     } else if (x.mint === WSOL) {
-      if (x.fromUserAccount === s) sol += x.tokenAmount;
-      if (x.toUserAccount === s) sol -= x.tokenAmount;
+      if (x.fromUserAccount === s) wsol += x.tokenAmount;
+      if (x.toUserAccount === s) wsol -= x.tokenAmount;
     } else if (STABLES.has(x.mint)) {
       if (x.fromUserAccount === s) usd += x.tokenAmount;
       if (x.toUserAccount === s) usd -= x.tokenAmount;
     }
   }
-  for (const n of t.nativeTransfers || []) {
-    if (n.fromUserAccount === s) sol += n.amount / 1e9;
-    if (n.toUserAccount === s) sol -= n.amount / 1e9;
+  // The signer's real SOL change catches pump.fun and AMM proceeds that never show as transfers.
+  const acct = (t.accountData || []).find((a) => a.account === s);
+  if (acct && acct.nativeBalanceChange !== 0) sol += -(acct.nativeBalanceChange + (t.fee || 0)) / 1e9;
+  else {
+    sol += wsol;
+    for (const n of t.nativeTransfers || []) {
+      if (n.fromUserAccount === s) sol += n.amount / 1e9;
+      if (n.toUserAccount === s) sol -= n.amount / 1e9;
+    }
   }
   const net = tokIn - tokOut;
   if (Math.abs(net) < 1e-9) return null;
@@ -128,4 +136,30 @@ export async function tokenMeta(mint: string): Promise<{ symbol?: string; name?:
   } catch {
     return {};
   }
+}
+
+// Some pools (Raydium AMM v4 and others) don't touch the mint account in a swap, so we also read the main pools.
+const pairCache = new Map<string, string[]>();
+export async function poolsOf(mint: string): Promise<string[]> {
+  if (pairCache.has(mint)) return pairCache.get(mint)!;
+  try {
+    const r = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${mint}`, { cache: "no-store" });
+    const pairs = ((await r.json()).pairs || []) as { chainId: string; pairAddress: string; liquidity?: { usd?: number } }[];
+    const top = pairs
+      .filter((p) => p.chainId === "solana")
+      .sort((a, b) => (b.liquidity?.usd || 0) - (a.liquidity?.usd || 0))
+      .slice(0, 2)
+      .map((p) => p.pairAddress);
+    pairCache.set(mint, top);
+    return top;
+  } catch {
+    return [];
+  }
+}
+
+export async function tokenTxsBetween(mint: string, from: number, to: number, maxPages = 6) {
+  const addrs = [mint, ...(await poolsOf(mint))];
+  const seen = new Map<string, HTx>();
+  for (const list of await Promise.all(addrs.map((a) => txsBetween(a, from, to, maxPages)))) for (const t of list) seen.set(t.signature, t);
+  return [...seen.values()].sort((a, b) => b.timestamp - a.timestamp);
 }

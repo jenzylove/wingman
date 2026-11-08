@@ -19,7 +19,7 @@ export async function POST(req: Request) {
       case "cancel":
         return NextResponse.json(await flow.cancelTx(b.id, b.owner));
       case "cancelled":
-        return NextResponse.json({ exit: await flow.cancelDone(b.id, b.sig) });
+        return NextResponse.json({ exit: await flow.cancelDone(b.id) });
       default:
         return NextResponse.json({ error: "Unknown action." }, { status: 400 });
     }

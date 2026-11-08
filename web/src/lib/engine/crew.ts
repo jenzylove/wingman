@@ -40,11 +40,11 @@ export const median = (xs: number[]) => {
 };
 
 // Crew buys with or before the caller; copy bots buy right after, every time.
-export function splitCrew(stats: Map<string, RepeatStat>, minHits = 2) {
+export function splitCrew(stats: Map<string, RepeatStat>, minHits = 3, minRatio = 0.3) {
   const crew: { wallet: string; stat: RepeatStat }[] = [];
   const copyBots: { wallet: string; stat: RepeatStat }[] = [];
   for (const [wallet, stat] of stats) {
-    if (stat.hits < minHits) continue;
+    if (stat.hits < minHits || stat.hits / Math.max(1, stat.of) < minRatio) continue;
     (median(stat.offsets) <= 1 ? crew : copyBots).push({ wallet, stat });
   }
   const byHits = (a: { stat: RepeatStat }, b: { stat: RepeatStat }) => b.stat.hits - a.stat.hits;
@@ -65,6 +65,7 @@ export function score(
   insiders: CrewMember[],
   windowTrades: Trade[],
   quoteUsd?: number,
+  who = "The caller's wallets and crew",
 ): Pick<Card, "summary" | "coverage" | "verdict" | "verdictLine"> {
   const mine = new Set(insiders.map((m) => m.wallet));
   const all = insiders.flatMap((m) => m.trades);
@@ -76,7 +77,10 @@ export function score(
   const bought = buys.reduce((a, t) => a + t.tokenAmount, 0);
   const sold = sells.reduce((a, t) => a + t.tokenAmount, 0);
   const net = sells.reduce((a, t) => a + t.quoteAmount, 0) - buys.reduce((a, t) => a + t.quoteAmount, 0);
-  const stillHoldingPct = bought > 0 ? Math.max(0, Math.min(100, Math.round(((bought - sold) / bought) * 100))) : 0;
+  const soldTokens = sold;
+  // Only talk about "% sold" and profit when the buys behind those sells are in view.
+  const complete = bought > 0 && sold <= bought * 1.02;
+  const stillHoldingPct = complete ? Math.max(0, Math.min(100, Math.round(((bought - sold) / bought) * 100))) : 0;
 
   const earlyBuys = windowTrades.filter((t) => t.side === "buy" && t.ts <= t0);
   const earlyVol = earlyBuys.reduce((a, t) => a + t.quoteAmount, 0);
@@ -103,30 +107,34 @@ export function score(
   const r = (x: number) => rel(x, ref);
   const q = (n: number) => `${Math.abs(n).toFixed(2)} ${all[0]?.quoteSymbol || "SOL"}${usd ? ` (about $${Math.round(Math.abs(usd)).toLocaleString("en-US")})` : ""}`;
 
+  const amount = (n: number) => (n >= 1e6 ? `${(n / 1e6).toFixed(1)}M` : n >= 1e3 ? `${(n / 1e3).toFixed(1)}K` : n.toFixed(0));
+  const soldPart = complete ? `sold ${100 - stillHoldingPct}%` : `sold ${amount(soldTokens)} tokens`;
+  const pnl = complete && net !== 0 ? (net > 0 ? `, ${q(net)} ahead` : `, down ${q(net)}`) : "";
+
   if (!all.length) {
     return {
       summary,
       coverage,
       verdict: "unknown",
       verdictLine: insiders.length
-        ? "The wallets we know for this caller didn't trade this token around the post."
+        ? `The wallets we know for this caller didn't trade this token around ${ref}.`
         : "We don't know any wallets for this caller yet, so we can't say what they did.",
     };
   }
-  if (sellsAfter.length && firstBuy !== undefined && firstBuy <= 0 && net > 0) {
+  if (hasPostTime && sellsAfter.length && firstBuy !== undefined && firstBuy <= 0 && complete && net > 0) {
     return {
       summary,
       coverage,
       verdict: "sold_into_followers",
-      verdictLine: `Insider wallets bought ${r(firstBuy)} and started selling ${r(Math.min(...sellsAfter.map((t) => t.ts)) - t0)}, coming out ${q(net)} ahead.`,
+      verdictLine: `${who} bought ${r(firstBuy)} and started selling ${r(Math.min(...sellsAfter.map((t) => t.ts)) - t0)}, coming out ${q(net)} ahead.`,
     };
   }
   if (sells.length && !hasPostTime && firstSell !== undefined) {
     return {
       summary,
       coverage,
-      verdict: net > 0 ? "sold_into_followers" : "exited",
-      verdictLine: `Insider wallets sold ${100 - stillHoldingPct}% within ${rel(firstSell, "").replace(/ (after|before) $/, "")} of the caller's first buy${net > 0 ? `, ${q(net)} ahead` : `, down ${q(net)}`}.`,
+      verdict: complete && net > 0 ? "sold_into_followers" : "exited",
+      verdictLine: `${who} ${soldPart} within ${rel(firstSell, "").replace(/ (after|before) $/, "")} of the caller's first buy${pnl}.`,
     };
   }
   if (sells.length) {
@@ -134,13 +142,13 @@ export function score(
       summary,
       coverage,
       verdict: "exited",
-      verdictLine: `Insider wallets bought ${firstBuy !== undefined ? r(firstBuy) : "earlier"} and have sold ${100 - stillHoldingPct}% so far${net > 0 ? `, ${q(net)} ahead` : ""}.`,
+      verdictLine: `${who} bought ${firstBuy !== undefined ? r(firstBuy) : "before this window"} and have ${soldPart} so far${pnl}.`,
     };
   }
   return {
     summary,
     coverage,
     verdict: "clean",
-    verdictLine: `Insider wallets bought ${firstBuy !== undefined ? r(firstBuy) : "earlier"} and haven't sold. Still holding ${stillHoldingPct}%.`,
+    verdictLine: `${who} bought ${firstBuy !== undefined ? r(firstBuy) : "earlier"} and haven't sold${complete ? `. Still holding ${stillHoldingPct}%` : ""}.`,
   };
 }

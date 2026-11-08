@@ -4,7 +4,8 @@ import { createPublicClient, createWalletClient, decodeEventLog, http, parseAbi,
 import { privateKeyToAccount } from "viem/accounts";
 import { base } from "viem/chains";
 import type { ArmedExit } from "../types";
-import { getExit, saveExit, watchAdd, watchGet } from "../store";
+import { claimOnce, getExit, saveExit, watchAdd, watchGet } from "../store";
+import { armMessage } from "./message";
 
 export const EXIT = () => process.env.NEXT_PUBLIC_EXIT_ADDRESS as Hex | undefined;
 const USDC = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
@@ -39,9 +40,10 @@ export async function buyQuote(p: { taker: string; token: string; ethWei: string
 }
 
 // The user armed onchain. We read the Armed event from their tx and start watching.
-export async function recordArm(p: { txHash: Hex; watch: string[]; cardId?: string }) {
+export async function recordArm(p: { txHash: Hex; watch: string[]; signature?: Hex; cardId?: string }) {
   const exit = EXIT();
   if (!exit) throw new BaseFlowError("Base exits aren't deployed yet.");
+  if (!/^0x[a-fA-F0-9]{64}$/.test(p.txHash)) throw new BaseFlowError("Bad transaction hash.");
   const rc = await pub().waitForTransactionReceipt({ hash: p.txHash, timeout: 60_000 });
   const log = rc.logs.find((l) => l.address.toLowerCase() === exit.toLowerCase());
   if (!log) throw new BaseFlowError("That transaction didn't arm an exit.");
@@ -50,6 +52,12 @@ export async function recordArm(p: { txHash: Hex; watch: string[]; cardId?: stri
   const a = ev.args;
   const watch = [...new Set(p.watch.filter((w) => /^0x[a-fA-F0-9]{40}$/.test(w)).map((w) => w.toLowerCase()))].slice(0, 50);
   if (!watch.length) throw new BaseFlowError("There are no wallets to watch for this call.");
+  if (await getExit(`base-${a.id.toString()}`)) throw new BaseFlowError("This exit is already recorded.");
+  // Only the arm owner decides which wallets trigger their exit.
+  const ok = p.signature
+    ? await pub().verifyMessage({ address: a.owner, message: armMessage(a.id, watch), signature: p.signature }).catch(() => false)
+    : false;
+  if (!ok) throw new BaseFlowError("The watch list must be signed by the wallet that armed the exit.");
   const e: ArmedExit = {
     id: `base-${a.id.toString()}`,
     chain: "base",
@@ -85,17 +93,25 @@ async function kyberRoute(token: string, amount: bigint, sender: string) {
 }
 
 // A watched Base wallet moved an armed token out. Fire the matching exits.
+// A real sale moves WETH or USDC in the same transaction. A plain transfer to another wallet doesn't.
+const WETH = "0x4200000000000000000000000000000000000006";
+async function isSale(tx: string) {
+  const rc = await pub().getTransactionReceipt({ hash: tx as Hex }).catch(() => null);
+  return Boolean(rc?.logs.some((l) => [WETH, USDC.toLowerCase()].includes(l.address.toLowerCase())));
+}
+
 export async function onBaseActivity(p: { from: string; token: string; tx: string; ts: number }) {
   const exit = EXIT();
   const key = process.env.KEEPER_PRIVATE_KEY as Hex | undefined;
   if (!exit || !key) return [];
+  if (!(await isSale(p.tx))) return [];
   const fired: string[] = [];
   for (const id of await watchGet(p.from.toLowerCase())) {
     const e = await getExit(id);
     if (!e || e.chain !== "base" || e.status !== "armed" || e.token !== p.token.toLowerCase()) continue;
-    e.status = "fired";
+    if (!(await claimOnce(`firing:${id}`, 120))) continue;
     e.trigger = { wallet: p.from.toLowerCase(), tx: p.tx, ts: p.ts };
-    await saveExit(e);
+    let sent = false;
     try {
       const c = pub();
       const [bal, allow] = await Promise.all([
@@ -113,6 +129,7 @@ export async function onBaseActivity(p: { from: string; token: string; tx: strin
         functionName: "fire",
         args: [BigInt(e.id.replace("base-", "")), route.router, route.data, route.quotedOut, (p.tx.length === 66 ? p.tx : `0x${"0".repeat(64)}`) as Hex, p.from as Hex],
       });
+      sent = true;
       const rc = await c.waitForTransactionReceipt({ hash, timeout: 60_000 });
       let usdc = 0;
       for (const l of rc.logs) {
@@ -125,7 +142,9 @@ export async function onBaseActivity(p: { from: string; token: string; tx: strin
       e.exit = { tx: hash, ts: Math.floor(Date.now() / 1000), quoteOut: usdc, usdOut: usdc };
     } catch (err) {
       console.error("base fire failed", id, err);
-      e.status = "failed";
+      // Nothing reached the chain: the arm is still active onchain, so keep watching and retry on the next sell.
+      e.status = sent ? "failed" : "armed";
+      if (!sent) e.trigger = undefined;
     }
     await saveExit(e);
     fired.push(id);

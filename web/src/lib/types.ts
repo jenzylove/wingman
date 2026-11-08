@@ -7,7 +7,8 @@ export type Tier =
   | "claimed" // caller signed from this wallet
   | "public" // publicly linked (KOL dataset, Basename, Farcaster verified)
   | "funded" // funded directly by a known caller wallet
-  | "behaviour"; // repeat early buyer on this caller's calls
+  | "behaviour" // repeat early buyer on this caller's calls
+  | "early"; // bought in the minutes right before this post (not tied to the caller)
 
 export interface Trade {
   wallet: string;
@@ -46,6 +47,7 @@ export interface Card {
   callerWallets: CrewMember[]; // tier claimed or public
   crew: CrewMember[]; // tier funded or behaviour
   copyBots: CrewMember[]; // repeat buyers who buy AFTER the caller (also dump on followers)
+  early?: CrewMember[]; // bought in the minutes right before the post; not tied to the caller unless seen on their other posts
   summary: {
     firstInsiderBuyOffset?: number; // seconds vs post, negative = before
     firstInsiderSellOffset?: number; // seconds vs post

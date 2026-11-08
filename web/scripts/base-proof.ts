@@ -5,6 +5,8 @@ import { privateKeyToAccount } from "viem/accounts";
 import { base } from "viem/chains";
 import { writeFileSync } from "fs";
 import { buyQuote, recordArm, onBaseActivity, pub, exitAbi } from "../src/lib/exits/base";
+import { armMessage } from "../src/lib/exits/message";
+import { decodeEventLog } from "viem";
 import { getExit } from "../src/lib/store";
 
 const TOKEN = (process.argv[2] || "0x4ed4E862860beD51a9570b96d89aF5E1B0Efefed") as Hex; // DEGEN
@@ -42,7 +44,11 @@ async function buy(w: ReturnType<typeof wallet>, eth: string, label: string) {
   const floor = BigInt(r.data.routeSummary.amountOut) / 2n;
   await wait(await rider.writeContract({ address: TOKEN, abi: erc20, functionName: "approve", args: [EXIT, bal] }), "riderApprove");
   const armRc = await wait(await rider.writeContract({ address: EXIT, abi: armAbi, functionName: "armWithFloor", args: [TOKEN, bal, 3000, floor] }), "riderArm");
-  const e = await recordArm({ txHash: armRc.transactionHash, watch: [crew.account.address] });
+  const armLog = armRc.logs.find((l) => l.address.toLowerCase() === EXIT.toLowerCase())!;
+  const armEv = decodeEventLog({ abi: exitAbi, data: armLog.data, topics: armLog.topics });
+  const armId = (armEv.args as { id: bigint }).id;
+  const signature = await rider.signMessage({ message: armMessage(armId, [crew.account.address]) });
+  const e = await recordArm({ txHash: armRc.transactionHash, watch: [crew.account.address], signature });
   console.log("armed", e.id, "watching", e.watch);
 
   // Crew sells everything back to ETH.

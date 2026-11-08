@@ -63,10 +63,10 @@ async function crewBalanceRaw() {
   const rideSig = await send(rideTx, "riderRide");
 
   // Second signature: the exit, held by Wingman, not sent.
-  const p = await flow.prepareExit({ id: r.id, sig: rideSig });
+  const p = await flow.prepareExit({ id: r.id, key: r.key, sig: rideSig });
   const exitTx = VersionedTransaction.deserialize(Buffer.from(p.tx, "base64"));
   exitTx.sign([rider]);
-  const armed = await flow.confirmArm({ id: r.id, signedTx: b64(exitTx.serialize()) }).catch(async (e) => {
+  const armed = await flow.confirmArm({ id: r.id, key: r.key, signedTx: b64(exitTx.serialize()) }).catch(async (e) => {
     // The webhook sync needs the public URL; the arm itself is stored before that step.
     console.log("note:", e.message);
     return getExit(r.id);

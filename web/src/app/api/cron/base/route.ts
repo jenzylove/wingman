@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { parseAbiItem, type Hex } from "viem";
 import { onBaseActivity, pub } from "@/lib/exits/base";
-import { kvGet, kvSet, recentExits } from "@/lib/store";
+import { claimOnce, kvGet, kvSet, recentExits } from "@/lib/store";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -9,11 +9,11 @@ export const maxDuration = 60;
 const transfer = parseAbiItem("event Transfer(address indexed from, address indexed to, uint256 value)");
 
 // Scans new Base blocks for armed tokens leaving any watched wallet, then fires those exits.
-// Called every few seconds by the keeper loop (and by open /exits pages as a backup).
+// Called every few seconds by the keeper loop.
 export async function GET(req: Request) {
-  const secret = new URL(req.url).searchParams.get("key");
-  if (secret !== process.env.HOOK_SECRET && req.headers.get("authorization") !== `Bearer ${process.env.CRON_SECRET}`)
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const want = process.env.HOOK_SECRET;
+  if (!want || req.headers.get("x-wingman-key") !== want) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  if (!(await claimOnce("cron:base", 3))) return NextResponse.json({ ok: true, skipped: "another run is in progress" });
   const c = pub();
   const head = await c.getBlockNumber();
   const last = BigInt((await kvGet<string>("base:lastBlock")) || (head - 50n).toString());

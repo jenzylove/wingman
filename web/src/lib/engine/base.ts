@@ -71,56 +71,63 @@ async function decimals(token: string) {
   return decimalsCache.get(token)!;
 }
 
+const DEPOSIT = "0xe1fffcc4923d04b559f4d29a8bfc6cda04eb5b0d3c460751c2402c5c5cc9109c"; // WETH Deposit(dst, wad)
+const WITHDRAWAL = "0x7fcf532c15f0a6db0bd6d0e038bea71d30d808c7d98cb3bf7268a95bf5081b65"; // WETH Withdrawal(src, wad)
+const USDC = "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913";
+
+type Receipt = { from: string; blockNumber: string; status: string; logs: Log[] };
+
+// Side comes from the signer's own token flow; price from the ETH or USDC that moved in the same tx.
 async function trades(token: string, fromB: number, toB: number, only?: string): Promise<Trade[]> {
   const t = token.toLowerCase();
-  const filter: Record<string, unknown> = { address: t, topics: [TRANSFER] };
   const tl = only
     ? [...(await logs({ address: t, topics: [TRANSFER, pad(only)] }, fromB, toB)), ...(await logs({ address: t, topics: [TRANSFER, null, pad(only)] }, fromB, toB))]
-    : await logs(filter, fromB, toB);
+    : await logs({ address: t, topics: [TRANSFER] }, fromB, toB);
   if (!tl.length) return [];
   const dec = await decimals(t);
-  // The pool is the address on the other side of most transfers.
-  const freq = new Map<string, number>();
-  for (const l of tl) for (const a of [addr(l.topics[1]), addr(l.topics[2])]) freq.set(a, (freq.get(a) || 0) + 1);
-  const pool = [...freq].sort((a, b) => b[1] - a[1])[0][0];
-  const byTx = new Map<string, Log[]>();
-  for (const l of tl) byTx.set(l.transactionHash, [...(byTx.get(l.transactionHash) || []), l]);
-  const hashes = [...byTx.keys()].slice(0, 400);
-  const txs: { from: string; blockNumber: string }[] = [];
+  const hashes = [...new Set(tl.map((l) => l.transactionHash))].slice(0, 400);
+  const rcs: Receipt[] = [];
   for (let i = 0; i < hashes.length; i += 40) {
-    txs.push(...(await rpcBatch<{ from: string; blockNumber: string }>(hashes.slice(i, i + 40).map((h) => ({ method: "eth_getTransactionByHash", params: [h] })))));
-  }
-  const wethLogs = await Promise.all([
-    logs({ address: WETH, topics: [TRANSFER, pad(pool)] }, fromB, toB),
-    logs({ address: WETH, topics: [TRANSFER, null, pad(pool)] }, fromB, toB),
-  ]);
-  const wethByTx = new Map<string, number>();
-  for (const l of wethLogs.flat()) {
-    const v = Number(BigInt(l.data)) / 1e18;
-    const sign = addr(l.topics[2]) === pool ? 1 : -1; // into the pool = someone paying ETH
-    wethByTx.set(l.transactionHash, (wethByTx.get(l.transactionHash) || 0) + sign * v);
+    rcs.push(...(await rpcBatch<Receipt>(hashes.slice(i, i + 40).map((h) => ({ method: "eth_getTransactionReceipt", params: [h] })))));
   }
   const out: Trade[] = [];
   for (let i = 0; i < hashes.length; i++) {
-    const h = hashes[i];
-    const signer = txs[i]?.from?.toLowerCase();
-    if (!signer) continue;
-    let poolNet = 0n;
-    for (const l of byTx.get(h)!) {
-      const v = BigInt(l.data);
-      if (addr(l.topics[1]) === pool) poolNet -= v;
-      if (addr(l.topics[2]) === pool) poolNet += v;
+    const rc = rcs[i];
+    if (!rc || rc.status !== "0x1") continue;
+    const signer = rc.from.toLowerCase();
+    let tokNet = 0n, ethIn = 0n, ethOut = 0n, usdIn = 0n, usdOut = 0n;
+    for (const l of rc.logs) {
+      const addrL = l.address.toLowerCase();
+      const topic = l.topics[0];
+      if (addrL === t && topic === TRANSFER) {
+        if (addr(l.topics[2]) === signer) tokNet += BigInt(l.data);
+        if (addr(l.topics[1]) === signer) tokNet -= BigInt(l.data);
+      } else if (addrL === WETH) {
+        if (topic === DEPOSIT) ethIn += BigInt(l.data); // ETH wrapped to pay
+        else if (topic === WITHDRAWAL) ethOut += BigInt(l.data); // WETH unwrapped to pay out
+        else if (topic === TRANSFER) {
+          if (addr(l.topics[1]) === signer) ethIn += BigInt(l.data);
+          if (addr(l.topics[2]) === signer) ethOut += BigInt(l.data);
+        }
+      } else if (addrL === USDC && topic === TRANSFER) {
+        if (addr(l.topics[1]) === signer) usdIn += BigInt(l.data);
+        if (addr(l.topics[2]) === signer) usdOut += BigInt(l.data);
+      }
     }
-    if (poolNet === 0n) continue;
-    const ts = await tsOf(num(txs[i].blockNumber));
+    if (tokNet === 0n) continue; // the signer's balance of this token didn't change: not their trade
+    const side = tokNet > 0n ? "buy" : "sell";
+    const eth = side === "buy" ? ethIn : ethOut;
+    const usdc = side === "buy" ? usdIn : usdOut;
+    if (eth === 0n && usdc === 0n) continue; // a transfer, not a trade
     out.push({
       wallet: signer,
-      side: poolNet < 0n ? "buy" : "sell",
-      ts,
-      tokenAmount: Number(poolNet < 0n ? -poolNet : poolNet) / 10 ** dec,
-      quoteAmount: Math.abs(wethByTx.get(h) || 0),
+      side,
+      ts: await tsOf(num(rc.blockNumber)),
+      tokenAmount: Number(tokNet < 0n ? -tokNet : tokNet) / 10 ** dec,
+      quoteAmount: Number(eth) / 1e18,
       quoteSymbol: "ETH",
-      tx: h,
+      usd: usdc ? Number(usdc) / 1e6 : undefined,
+      tx: hashes[i],
     });
   }
   return out;

@@ -18,6 +18,6 @@ jobs:
         run: |
           end=$((SECONDS + 290))
           while [ $SECONDS -lt $end ]; do
-            curl -s -m 50 "$URL/api/cron/base?key=$KEY" | head -c 300; echo
+            curl -s -m 50 -H "x-wingman-key: $KEY" "$URL/api/cron/base" | head -c 300; echo
             sleep 4
           done

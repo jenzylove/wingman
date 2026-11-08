@@ -99,9 +99,10 @@ export function signed(n: number, digits = 2): string {
 
 export const TIER_INFO: Record<Tier, { label: string; help: string }> = {
   claimed: { label: "Claimed", help: "The caller signed a message from this wallet." },
-  public: { label: "Public", help: "Publicly linked to the caller: a KOL dataset, a Basename or a verified Farcaster address." },
+  public: { label: "Public", help: "Publicly linked to the caller: the Kolscan KOL list or a verified Farcaster address." },
   funded: { label: "Funded", help: "Funded directly by a known caller wallet." },
-  behaviour: { label: "Behaviour", help: "Keeps buying right before this caller posts." },
+  behaviour: { label: "Repeat", help: "Seen buying with this caller again and again: within 20s of their buys on several recent tokens, or right before several of their posts we have checked." },
+  early: { label: "Early", help: "Bought in the 3 minutes right before this post. Not tied to the caller unless it shows up early on their other posts too." },
 };
 
 export function chainName(chain: Chain): string {

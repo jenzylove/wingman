@@ -13,6 +13,7 @@ import {
   TransactionMessage,
   VersionedTransaction,
 } from "@solana/web3.js";
+import { createPublicKey, verify } from "crypto";
 
 const WSOL = "So11111111111111111111111111111111111111112";
 export const rpcUrl = () => `https://mainnet.helius-rpc.com/?api-key=${process.env.HELIUS_API_KEY}`;
@@ -146,7 +147,16 @@ export function verifySigned(unsignedB64: string, signedB64: string, owner: stri
   const s = VersionedTransaction.deserialize(Buffer.from(signedB64, "base64"));
   if (b64(u.message.serialize()) !== b64(s.message.serialize())) throw new Error("Signed transaction differs from the exit we built.");
   const idx = s.message.staticAccountKeys.findIndex((k) => k.toBase58() === owner);
-  if (idx !== 0 || s.signatures[0].every((x) => x === 0)) throw new Error("Missing owner signature.");
+  if (idx !== 0) throw new Error("Missing owner signature.");
+  // A real ed25519 check, not just "some bytes are present".
+  const spki = Buffer.concat([Buffer.from("302a300506032b6570032100", "hex"), new PublicKey(owner).toBuffer()]);
+  const key = createPublicKey({ key: spki, format: "der", type: "spki" });
+  if (!verify(null, Buffer.from(s.message.serialize()), key, Buffer.from(s.signatures[0]))) throw new Error("The exit signature isn't valid for this wallet.");
+}
+
+// True once the nonce account is gone, which means the held exit can never land.
+export async function nonceClosed(nonce: string) {
+  return (await conn().getAccountInfo(new PublicKey(nonce))) === null;
 }
 
 export async function submit(signedB64: string) {
