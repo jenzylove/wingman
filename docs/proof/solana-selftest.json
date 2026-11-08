@@ -1,0 +1,37 @@
+{
+ "mint": "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263",
+ "rider": "9JGEynMqYwcxtPKeW7vNKC1G3R8mRWBt4mM9ZKzijzfY",
+ "crew": "HhNj9av4ZsjnuQHAQNKr2hQWcruuYB2s3Wv7ZhCPA6qm",
+ "fundCrew": "31KhEoS3a29oQbrtV6MD51kzb3Ax4KVXJx755YNQb2L1cXj7i6Nq8X2DjRUF1boK5nV7AKvmsopL6YsMn2WNWATp",
+ "crewBuy": "MSfjPR2Y3k5uX65aLn4sLNVqgtTiRKi8i7hzyWD1vY2htgFher3P6qTfS8RJWThAf7UG4GiMnTaRdvB2FcEukhS",
+ "riderRide": "5GCJNWfKvC57A3Tf8PREFa6K2YfvPvxAwFGx1DQJH4mjGsNbuUjH4DeMaM8kxLCc1an1QYRK5NgXiGP2JEcmEHZV",
+ "crewSell": "2B895t7WRjubh58fmoTnXzJckTZuiajBCbXKw6Z4NXRNxWv9FWaxXfGLqKZu9GXt8WWXk2JkHTCRoYkayxMxneEf",
+ "fired": [
+  "76bcf587093f44ab"
+ ],
+ "exitRecord": {
+  "id": "76bcf587093f44ab",
+  "chain": "solana",
+  "owner": "9JGEynMqYwcxtPKeW7vNKC1G3R8mRWBt4mM9ZKzijzfY",
+  "token": "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263",
+  "watch": [
+   "HhNj9av4ZsjnuQHAQNKr2hQWcruuYB2s3Wv7ZhCPA6qm"
+  ],
+  "amount": "128502203916",
+  "maxSlippageBps": 300,
+  "status": "fired",
+  "armedAt": 1794173312,
+  "armTx": "5GCJNWfKvC57A3Tf8PREFa6K2YfvPvxAwFGx1DQJH4mjGsNbuUjH4DeMaM8kxLCc1an1QYRK5NgXiGP2JEcmEHZV",
+  "trigger": {
+   "wallet": "HhNj9av4ZsjnuQHAQNKr2hQWcruuYB2s3Wv7ZhCPA6qm",
+   "tx": "2B895t7WRjubh58fmoTnXzJckTZuiajBCbXKw6Z4NXRNxWv9FWaxXfGLqKZu9GXt8WWXk2JkHTCRoYkayxMxneEf",
+   "ts": 1794173314
+  },
+  "exit": {
+   "tx": "24b66AKbtPdgr1BsAftWaURG3M8vc6nWYaxP85JDjqt7HyUJXwrz32MQuFmDyBbd3WkyYpVFxFSQMFhmVRYtMznc",
+   "ts": 1794173318,
+   "quoteOut": 0.039981626
+  }
+ },
+ "keeperSeconds": 2.66
+}

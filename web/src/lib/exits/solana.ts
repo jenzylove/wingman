@@ -27,13 +27,7 @@ export async function buildRide(p: { owner: string; mint: string; lamports: stri
   const rent = await c.getMinimumBalanceForRentExemption(NONCE_ACCOUNT_LENGTH);
   const q = await fetch(`https://lite-api.jup.ag/swap/v1/quote?inputMint=${WSOL}&outputMint=${p.mint}&amount=${p.lamports}&slippageBps=${p.slippageBps}`, { cache: "no-store" }).then((r) => r.json());
   if (!q.outAmount) throw new Error("No route to buy this token right now.");
-  const si = await fetch("https://lite-api.jup.ag/swap/v1/swap-instructions", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ quoteResponse: q, userPublicKey: p.owner, wrapAndUnwrapSol: true, dynamicComputeUnitLimit: true, prioritizationFeeLamports: { priorityLevelWithMaxLamports: { maxLamports: 200000, priorityLevel: "high" } } }),
-    cache: "no-store",
-  }).then((r) => r.json());
-  if (si.error) throw new Error(`Route build failed: ${si.error}`);
+  const si = await jupInstructions(q, p.owner, 200000, "high");
   const alts: AddressLookupTableAccount[] = [];
   for (const a of si.addressLookupTableAddresses || []) {
     const t = await c.getAddressLookupTable(new PublicKey(a));
@@ -88,6 +82,22 @@ const toIx = (i: JupIx) =>
     data: Buffer.from(i.data, "base64"),
   });
 
+async function jupInstructions(quoteResponse: unknown, owner: string, maxLamports: number, level: string) {
+  for (let i = 0; i < 4; i++) {
+    const si = await fetch("https://lite-api.jup.ag/swap/v1/swap-instructions", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ quoteResponse, userPublicKey: owner, wrapAndUnwrapSol: true, dynamicComputeUnitLimit: true, prioritizationFeeLamports: { priorityLevelWithMaxLamports: { maxLamports, priorityLevel: level } } }),
+      cache: "no-store",
+    })
+      .then((r) => r.json())
+      .catch(() => ({}));
+    if (si.swapInstruction) return si;
+    await new Promise((r) => setTimeout(r, 700 * (i + 1)));
+  }
+  throw new Error("The swap route couldn't be built right now. Try again in a moment.");
+}
+
 export async function tokenBalanceRaw(owner: string, mint: string): Promise<{ raw: string; decimals: number }> {
   const r = await conn().getParsedTokenAccountsByOwner(new PublicKey(owner), { mint: new PublicKey(mint) });
   let raw = 0n;
@@ -107,19 +117,12 @@ export async function buildExit(p: { owner: string; mint: string; amountRaw: str
   const acc = await c.getAccountInfo(new PublicKey(p.nonce));
   if (!acc) throw new Error("Nonce account not found yet. Wait for the first transaction to confirm.");
   const nonceValue = NonceAccount.fromAccountData(acc.data).nonce;
-
   const q = await fetch(
     `https://lite-api.jup.ag/swap/v1/quote?inputMint=${p.mint}&outputMint=${WSOL}&amount=${p.amountRaw}&slippageBps=${p.slippageBps}`,
     { cache: "no-store" },
   ).then((r) => r.json());
   if (!q.outAmount) throw new Error("No route to sell this token right now.");
-  const si = await fetch("https://lite-api.jup.ag/swap/v1/swap-instructions", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ quoteResponse: q, userPublicKey: p.owner, wrapAndUnwrapSol: true, dynamicComputeUnitLimit: true, prioritizationFeeLamports: { priorityLevelWithMaxLamports: { maxLamports: 400000, priorityLevel: "veryHigh" } } }),
-    cache: "no-store",
-  }).then((r) => r.json());
-  if (si.error) throw new Error(`Route build failed: ${si.error}`);
+  const si = await jupInstructions(q, p.owner, 400000, "veryHigh");
 
   const alts: AddressLookupTableAccount[] = [];
   for (const a of si.addressLookupTableAddresses || []) {
