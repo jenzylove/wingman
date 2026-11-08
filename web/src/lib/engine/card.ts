@@ -1,0 +1,123 @@
+import { createHash } from "crypto";
+import type { Call, Card, CrewMember, Trade } from "../types";
+import { kvGet, kvSet } from "../store";
+import { readInput } from "./input";
+import { callerWallets, kolName } from "./wallets";
+import { repeatStats, score, splitCrew, CO_BUY_WINDOW } from "./crew";
+import * as sol from "./sol";
+import * as base from "./base";
+
+const BEFORE = 600; // read 10 min before the post
+const AFTER = 1800; // and 30 min after
+
+const cardId = (c: Call) =>
+  createHash("sha256")
+    .update(c.url || `${c.token.chain}:${c.token.address}:${c.handle || ""}`)
+    .digest("hex")
+    .slice(0, 16);
+
+type Adapter = {
+  windowTrades(token: string, from: number, to: number): Promise<Trade[]>;
+  walletTrades(wallet: string, token: string, from: number, to: number): Promise<Trade[]>;
+  recentBuys(wallet: string, exclude: string): Promise<{ mint: string; ts: number }[]>;
+  quoteUsd(): Promise<number | undefined>;
+  meta(token: string): Promise<{ symbol?: string; name?: string }>;
+};
+
+const solana: Adapter = {
+  async windowTrades(mint, from, to) {
+    return (await sol.txsBetween(mint, from, to, 8)).map((t) => sol.tradeOf(t, mint)).filter(Boolean) as Trade[];
+  },
+  async walletTrades(wallet, mint, from, to) {
+    return (await sol.txsBetween(wallet, from, to, 3))
+      .filter((t) => t.feePayer === wallet)
+      .map((t) => sol.tradeOf(t, mint))
+      .filter(Boolean) as Trade[];
+  },
+  recentBuys: (w, ex) => sol.recentBuys(w, ex, 10),
+  quoteUsd: sol.solUsd,
+  meta: sol.tokenMeta,
+};
+
+const adapters = { solana, base: base.adapter as Adapter };
+
+// The caller's crew, learned from their recent buys. Cached per caller for an hour.
+async function learnCrew(a: Adapter, handle: string, wallets: string[], exclude: string) {
+  const key = `crew:${handle}:${wallets.join(",").slice(0, 120)}`;
+  const cached = await kvGet<{ stats: [string, { hits: number; of: number; offsets: number[] }][]; tokens: number }>(key);
+  if (cached) return { stats: new Map(cached.stats), tokens: cached.tokens };
+  const buys = (await Promise.all(wallets.slice(0, 3).map((w) => a.recentBuys(w, exclude)))).flat().slice(0, 10);
+  const byMint = new Map<string, Trade[]>();
+  await Promise.all(
+    buys.map(async (b) => {
+      byMint.set(b.mint, await a.windowTrades(b.mint, b.ts - CO_BUY_WINDOW, b.ts + CO_BUY_WINDOW));
+    }),
+  );
+  const stats = repeatStats(buys, byMint, new Set(wallets));
+  await kvSet(key, { stats: [...stats], tokens: byMint.size }, 3600);
+  return { stats, tokens: byMint.size };
+}
+
+export async function buildCard(raw: string): Promise<Card> {
+  const call = await readInput(raw);
+  const a = adapters[call.token.chain];
+  const token = call.token.address;
+  const [meta, quoteUsd, known] = await Promise.all([a.meta(token), a.quoteUsd(), callerWallets(call.handle, call.token.chain)]);
+  call.token = { ...call.token, symbol: call.token.symbol || meta.symbol, name: meta.name };
+  call.displayName ||= call.handle ? kolName(call.handle) : undefined;
+
+  // Reference time: the post, or the caller's first buy when there is no post.
+  let t0 = call.postedAt;
+  const now = Math.floor(Date.now() / 1000);
+  if (!t0) {
+    const firsts = await Promise.all(known.map((k) => a.walletTrades(k.wallet, token, now - 7 * 86400, now)));
+    const buys = firsts.flat().filter((t) => t.side === "buy");
+    t0 = buys.length ? Math.min(...buys.map((t) => t.ts)) : now - BEFORE;
+  }
+  const from = t0 - BEFORE;
+  const to = Math.min(now, t0 + AFTER);
+
+  const [windowTrades, callerTrades, learned] = await Promise.all([
+    a.windowTrades(token, from, to),
+    Promise.all(known.map((k) => a.walletTrades(k.wallet, token, t0! - 6 * 3600, to))),
+    call.handle && known.length ? learnCrew(a, call.handle, known.map((k) => k.wallet), token) : Promise.resolve(null),
+  ]);
+
+  const callerWalletsOut: CrewMember[] = known.map((k, i) => ({ ...k, trades: callerTrades[i].sort((x, y) => x.ts - y.ts) }));
+  const tradesBy = new Map<string, Trade[]>();
+  for (const t of windowTrades) tradesBy.set(t.wallet, [...(tradesBy.get(t.wallet) || []), t]);
+
+  const crew: CrewMember[] = [];
+  const copyBots: CrewMember[] = [];
+  if (learned) {
+    const split = splitCrew(learned.stats);
+    for (const [list, out, kind] of [
+      [split.crew, crew, "with or before"],
+      [split.copyBots, copyBots, "right after"],
+    ] as const) {
+      for (const { wallet, stat } of list) {
+        const trades = (tradesBy.get(wallet) || []).sort((x, y) => x.ts - y.ts);
+        out.push({
+          wallet,
+          tier: "behaviour",
+          evidence: `Bought ${kind} this caller on ${stat.hits} of ${stat.of} recent tokens, within ${CO_BUY_WINDOW}s`,
+          repeat: { hits: stat.hits, of: stat.of },
+          firstBuyOffset: trades.find((t) => t.side === "buy") ? trades.find((t) => t.side === "buy")!.ts - t0 : undefined,
+          trades,
+        });
+      }
+    }
+  }
+
+  const insiders = [...callerWalletsOut, ...crew.filter((c) => c.trades.length)];
+  const scored = score(t0, Boolean(call.postedAt), insiders, windowTrades, quoteUsd);
+  return {
+    id: cardId(call),
+    call: { ...call, postedAt: call.postedAt },
+    callerWallets: callerWalletsOut,
+    crew,
+    copyBots,
+    ...scored,
+    computedAt: now,
+  };
+}
