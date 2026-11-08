@@ -71,7 +71,7 @@ export interface ArmedExit {
   watch: string[]; // crew and caller wallets whose first sell triggers the exit
   amount: string; // token amount (raw units) to sell
   maxSlippageBps: number;
-  status: "armed" | "fired" | "cancelled" | "failed";
+  status: "pending" | "armed" | "fired" | "cancelled" | "failed";
   armedAt: number;
   armTx?: string;
   trigger?: { wallet: string; tx: string; ts: number };

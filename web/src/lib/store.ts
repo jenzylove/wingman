@@ -1,8 +1,8 @@
 // Tiny persistence layer. Upstash Redis REST when configured, memory otherwise.
 import type { ArmedExit, Card, Chain } from "./types";
 
-const URL = process.env.UPSTASH_REDIS_REST_URL;
-const TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
+const URL = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
+const TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
 const mem = new Map<string, string>();
 const memLists = new Map<string, string[]>();
 
@@ -72,4 +72,16 @@ export async function exitsOf(owner: string) {
 }
 export async function recentExits(n = 50) {
   return (await Promise.all((await listRange("exits", n)).map(getExit))).filter(Boolean) as ArmedExit[];
+}
+
+// Which armed exits depend on a wallet, so a webhook hit finds them fast.
+export async function watchAdd(wallet: string, exitId: string) {
+  await listPush(`watch:${wallet}`, exitId, 200);
+  await listPush("watched", wallet, 25000);
+}
+export async function watchGet(wallet: string) {
+  return [...new Set(await listRange(`watch:${wallet}`, 200))];
+}
+export async function allWatched() {
+  return [...new Set(await listRange("watched", 25000))];
 }
