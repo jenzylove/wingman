@@ -1,0 +1,42 @@
+{
+ "token": "0x4ed4E862860beD51a9570b96d89aF5E1B0Efefed",
+ "exit": "0x589edbbEC1a8B2e9f17A34d5419Dc371dF052734",
+ "crew": "0xC25A0c3c6c3c941cb2010Acf58C62F72124b1d17",
+ "rider": "0x4e8B2C8B9184fc1E68562530e65821f2EC6C6F43",
+ "crewBuy": "0xf48ec076bb259a43bc7f3a9c6b3dbbae6f110732861d02f0b5f7f21e2935db9f",
+ "riderBuy": "0xfe4b97e9aec101eef5f0eb4d2af8406376e0bf16c18cd5e56a5fc61bbfc33f7e",
+ "riderTokens": "2134454614240313451121",
+ "riderApprove": "0x3e082eec49930a7bd201eb9300c8c573656e768b4838ca326f847095d5bc7a44",
+ "riderArm": "0xe8e93ccc881ef59bd13618894987e432a359c741882ac0ef8adc9d4b7741e099",
+ "crewApprove": "0xa0e2828b22f136a23567589a88a2fa2dab35212c54a7f29da242ad9bb1a1416c",
+ "crewSell": "0x6e7c45d7c740316a49dc72378da58776889546f5565e1907acd441f1ed6f3451",
+ "fired": [
+  "base-1"
+ ],
+ "exitRecord": {
+  "id": "base-1",
+  "chain": "base",
+  "owner": "0x4e8b2c8b9184fc1e68562530e65821f2ec6c6f43",
+  "token": "0x4ed4e862860bed51a9570b96d89af5e1b0efefed",
+  "watch": [
+   "0xc25a0c3c6c3c941cb2010acf58c62f72124b1d17"
+  ],
+  "amount": "2134454614240313451121",
+  "maxSlippageBps": 3000,
+  "status": "fired",
+  "armedAt": 1794173074,
+  "armTx": "0xe8e93ccc881ef59bd13618894987e432a359c741882ac0ef8adc9d4b7741e099",
+  "trigger": {
+   "wallet": "0xc25a0c3c6c3c941cb2010acf58c62f72124b1d17",
+   "tx": "0x6e7c45d7c740316a49dc72378da58776889546f5565e1907acd441f1ed6f3451",
+   "ts": 1794173077
+  },
+  "exit": {
+   "tx": "0x192ee870ee0aff8530e4c559a7b1491c80ba09ab914c2f4818a1b1678b6f98ab",
+   "ts": 1794173081,
+   "quoteOut": 1.765084,
+   "usdOut": 1.765084
+  }
+ },
+ "keeperSeconds": 3.192
+}
