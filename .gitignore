@@ -12,3 +12,6 @@ broadcast/
 keystore/
 wallets/
 .vercel
+contracts/lib/
+contracts/out/
+contracts/cache/
