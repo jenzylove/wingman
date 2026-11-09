@@ -31,7 +31,7 @@ Full records: [docs/proof](docs/proof). Contracts: [docs/DEPLOYMENTS.md](docs/DE
 * **Repeat:** wallets that bought within 20 seconds of the caller on 3 or more of their recent tokens, or in the very same second on 2 or more. Once a wallet qualifies, Wingman remembers it as that caller's crew.
 * **Early:** wallets that bought in the 3 minutes before the post. Wingman remembers them per caller, and a wallet that shows up early on 2 or more of the same caller's posts becomes crew.
 
-Claimed and public wallets are the caller's own. Repeat and early wallets are linked by behaviour, trading alongside the caller, not by proven ownership, and every card labels which is which. Every card also says what it could see, so a thin read is labelled thin.
+Claimed and public wallets are the caller's own. Repeat and early wallets are linked by behaviour, trading alongside the caller, not by proven ownership, and every card labels which is which. Every card also says what it could see, so a thin read is labelled thin. Today Wingman learns from up to 3 of a caller's wallets and their last 16 tokens, and it does not trace funding links between wallets yet.
 
 ## How exits work
 
