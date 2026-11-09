@@ -1,3 +1,4 @@
+import { get as httpsGet } from "https";
 import type { Call, Chain } from "../types";
 
 const SOL_ADDR = /\b[1-9A-HJ-NP-Za-km-z]{32,44}\b/g;
@@ -50,8 +51,17 @@ export class InputError extends Error {}
 export type InputHint = { postedAt?: number; handle?: string; displayName?: string; url?: string };
 
 async function readTelegramPost(channel: string, id: string): Promise<{ text: string; postedAt: number; name?: string }> {
-  const r = await fetch(`https://t.me/${channel}/${id}?embed=1&mode=tme`, { cache: "no-store" });
-  const html = r.ok ? await r.text() : "";
+  // Plain HTTP/1.1: the serverless fetch trips over t.me's HTTP/2 frames.
+  const html = await new Promise<string>((resolve) => {
+    const req = httpsGet(`https://t.me/${channel}/${id}?embed=1&mode=tme`, { headers: { "user-agent": "Mozilla/5.0 (compatible; Wingman/1.0)" }, timeout: 10000 }, (res) => {
+      let b = "";
+      res.setEncoding("utf8");
+      res.on("data", (c) => (b += c));
+      res.on("end", () => resolve(res.statusCode === 200 ? b : ""));
+    });
+    req.on("error", () => resolve(""));
+    req.on("timeout", () => req.destroy());
+  });
   const when = html.match(/<time[^>]*datetime="([^"]+)"/)?.[1];
   const body = html.match(/class="tgme_widget_message_text[^"]*"[^>]*>([\s\S]*?)<\/div>/)?.[1];
   if (!when || body === undefined) throw new InputError("We couldn't read that Telegram post. Only posts in public channels can be read.");
