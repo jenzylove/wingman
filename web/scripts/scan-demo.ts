@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- dev scripts reading loose JSON */
 // Finds fresh, real calls for the demo: recent buys by known KOL wallets, built into cards.
 import kols from "../src/data/kols-sol.json";
 import { recentBuys } from "../src/lib/engine/sol";

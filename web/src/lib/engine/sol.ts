@@ -17,18 +17,40 @@ type HTx = {
   fee?: number;
 };
 
-async function helius(path: string): Promise<HTx[]> {
-  for (let i = 0; i < 5; i++) {
-    const r = await fetch(`https://api.helius.xyz/v0/${path}${path.includes("?") ? "&" : "?"}api-key=${KEY()}`, { cache: "no-store" });
-    if (r.status === 429) {
-      await sleep(800 * (i + 1));
-      continue;
-    }
-    const j = await r.json().catch(() => null);
-    if (Array.isArray(j)) return j;
-    return []; // "no events in search period" and similar
+export class ReadError extends Error {}
+
+// At most a few Helius reads at once, so a card's burst of reads doesn't trip rate limits.
+let active = 0;
+const waiting: (() => void)[] = [];
+async function slot<T>(fn: () => Promise<T>): Promise<T> {
+  if (active >= 5) await new Promise<void>((r) => waiting.push(r));
+  active++;
+  try {
+    return await fn();
+  } finally {
+    await sleep(120);
+    active--;
+    waiting.shift()?.();
   }
-  return [];
+}
+
+// A failed read must never look like "no trades": empty means empty, anything else retries and then throws.
+async function helius(path: string): Promise<HTx[]> {
+  for (let i = 0; i < 6; i++) {
+    const r = await slot(() => fetch(`https://api.helius.xyz/v0/${path}${path.includes("?") ? "&" : "?"}api-key=${KEY()}`, { cache: "no-store" })).catch(() => null);
+    if (r && r.ok) {
+      const j = await r.json().catch(() => null);
+      if (Array.isArray(j)) return j;
+      // "Failed to find events within the search period": nothing in this time range.
+      if (j && /search period|no transactions|not found/i.test(JSON.stringify(j))) return [];
+    } else if (r && r.status !== 429 && r.status < 500) {
+      const text = await r.text().catch(() => "");
+      if (/search period|no transactions|not found/i.test(text)) return [];
+    }
+    if (process.env.WM_DEBUG) console.error("helius retry", i, r?.status, path.slice(0, 120));
+    await sleep(600 * (i + 1));
+  }
+  throw new ReadError("helius read failed");
 }
 
 // All transactions touching an address between two times, newest first, up to maxPages*100.
@@ -163,9 +185,21 @@ export async function poolsOf(mint: string): Promise<string[]> {
   }
 }
 
-export async function tokenTxsBetween(mint: string, from: number, to: number, maxPages = 6) {
+// Reads a token's trades across a time window. Busy tokens have thousands of trades a minute, and reads come
+// newest first, so one read only sees the end of the window. Splitting the window into slices samples all of it.
+export async function tokenTxsBetween(mint: string, from: number, to: number, maxPages = 6, opts: { slices?: number; pages?: number } = {}) {
   const addrs = [mint, ...(await poolsOf(mint))];
+  const span = Math.max(1, to - from);
+  const slices = Math.max(1, Math.min(opts.slices ?? 1, Math.ceil(span / 10)));
+  const pages = opts.pages ?? (slices === 1 ? maxPages : 1);
+  const step = span / slices;
+  const jobs: Promise<HTx[]>[] = [];
+  for (let i = 0; i < slices; i++) {
+    const a = Math.floor(from + i * step);
+    const b = i === slices - 1 ? to : Math.floor(from + (i + 1) * step) - 1;
+    for (const addr of addrs) jobs.push(txsBetween(addr, a, b, pages));
+  }
   const seen = new Map<string, HTx>();
-  for (const list of await Promise.all(addrs.map((a) => txsBetween(a, from, to, maxPages)))) for (const t of list) seen.set(t.signature, t);
+  for (const list of await Promise.all(jobs)) for (const t of list) seen.set(t.signature, t);
   return [...seen.values()].sort((a, b) => b.timestamp - a.timestamp);
 }

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- dev scripts reading loose JSON */
 // Pushes real recent trades through each quote path and checks they carry value and the right side.
 import * as base from "../src/lib/engine/base";
 import { tokenTxsBetween, tradeOf, solUsd } from "../src/lib/engine/sol";

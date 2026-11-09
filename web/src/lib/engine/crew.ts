@@ -147,6 +147,16 @@ export function score(
       verdictLine: `${who} bought ${r(firstBuy)} and started selling ${r(Math.min(...sellsAfter.map((t) => t.ts)) - t0)}, coming out ${q(net)} ahead.`,
     };
   }
+  // Light trimming isn't an exit: while the insiders still hold 75% or more, the verdict says they're in.
+  const trimmedOnly = complete && stillHoldingPct >= 75;
+  if (sells.length && trimmedOnly) {
+    return {
+      summary,
+      coverage,
+      verdict: "clean",
+      verdictLine: `${who} bought ${firstBuy !== undefined ? r(firstBuy) : "earlier"} and have ${soldPart} so far, still holding ${stillHoldingPct}%.`,
+    };
+  }
   if (sells.length && !hasPostTime && firstSell !== undefined) {
     return {
       summary,

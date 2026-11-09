@@ -18,19 +18,19 @@ const cardId = (c: Call) =>
     .slice(0, 16);
 
 type Adapter = {
-  windowTrades(token: string, from: number, to: number): Promise<Trade[]>;
-  walletTrades(wallet: string, token: string, from: number, to: number): Promise<Trade[]>;
+  windowTrades(token: string, from: number, to: number, opts?: { slices?: number; pages?: number }): Promise<Trade[]>;
+  walletTrades(wallet: string, token: string, from: number, to: number, pages?: number): Promise<Trade[]>;
   recentBuys(wallet: string, exclude: string): Promise<{ mint: string; ts: number }[]>;
   quoteUsd(): Promise<number | undefined>;
   meta(token: string): Promise<{ symbol?: string; name?: string }>;
 };
 
 const solana: Adapter = {
-  async windowTrades(mint, from, to) {
-    return (await sol.tokenTxsBetween(mint, from, to)).map((t) => sol.tradeOf(t, mint)).filter(Boolean) as Trade[];
+  async windowTrades(mint, from, to, opts) {
+    return (await sol.tokenTxsBetween(mint, from, to, 6, opts)).map((t) => sol.tradeOf(t, mint)).filter(Boolean) as Trade[];
   },
-  async walletTrades(wallet, mint, from, to) {
-    return (await sol.txsBetween(wallet, from, to, 6))
+  async walletTrades(wallet, mint, from, to, pages = 6) {
+    return (await sol.txsBetween(wallet, from, to, pages))
       .filter((t) => t.feePayer === wallet)
       .map((t) => sol.tradeOf(t, mint))
       .filter(Boolean) as Trade[];
@@ -54,7 +54,7 @@ async function learnCrew(a: Adapter, handle: string, wallets: string[], exclude:
   const byMint = new Map<string, Trade[]>();
   await Promise.all(
     buys.map(async (b) => {
-      byMint.set(b.mint, await a.windowTrades(b.mint, b.ts - CO_BUY_WINDOW, b.ts + CO_BUY_WINDOW));
+      byMint.set(b.mint, await a.windowTrades(b.mint, b.ts - CO_BUY_WINDOW, b.ts + CO_BUY_WINDOW, { slices: 2, pages: 1 }).catch(() => []));
     }),
   );
   const fresh = repeatStats(buys, byMint, new Set(wallets));
@@ -85,7 +85,7 @@ export async function buildCard(raw: string, hint?: InputHint): Promise<Card> {
   let t0 = call.postedAt;
   const now = Math.floor(Date.now() / 1000);
   if (!t0) {
-    const firsts = await Promise.all(known.map((k) => a.walletTrades(k.wallet, token, now - 7 * 86400, now)));
+    const firsts = await Promise.all(known.map((k) => a.walletTrades(k.wallet, token, now - 7 * 86400, now, 3)));
     const buys = firsts.flat().filter((t) => t.side === "buy");
     t0 = buys.length ? Math.min(...buys.map((t) => t.ts)) : now - BEFORE;
   }
@@ -93,8 +93,13 @@ export async function buildCard(raw: string, hint?: InputHint): Promise<Card> {
   const to = Math.min(now, t0 + AFTER);
 
   const [windowTrades, callerTrades, learned] = await Promise.all([
-    Promise.all([a.windowTrades(token, from, t0 + 5), a.windowTrades(token, t0 + 6, to)]).then(([x, y]) => [...x, ...y]),
-    Promise.all(known.map((k) => a.walletTrades(k.wallet, token, t0! - 6 * 3600, to))),
+    // The 3 minutes before the post get their own finer read: that is where early buyers are found.
+    Promise.all([
+      a.windowTrades(token, from, t0 - EARLY - 1, { pages: 1 }),
+      a.windowTrades(token, t0 - EARLY, t0 + 5, { slices: 4, pages: 1 }),
+      a.windowTrades(token, t0 + 6, to, { pages: 2 }),
+    ]).then((xs) => xs.flat()),
+    Promise.all(known.map((k) => a.walletTrades(k.wallet, token, t0! - 6 * 3600, to, 3))),
     call.handle && known.length ? learnCrew(a, call.handle, known.map((k) => k.wallet), token) : Promise.resolve(null),
   ]);
 
@@ -126,6 +131,28 @@ export async function buildCard(raw: string, hint?: InputHint): Promise<Card> {
     }
   }
 
+  // A busy token's window read can't hold every trade, so read each insider's own trades in this token too.
+  // That way a crew or early wallet's sell is never missed just because the token was busy.
+  const enrich = async (members: CrewMember[]) =>
+    Promise.all(
+      members
+        .filter((m) => {
+          // Only wallets still showing a position need their own read; a visible full exit is already known.
+          const b = m.trades.filter((t) => t.side === "buy").reduce((s, t) => s + t.tokenAmount, 0);
+          const sd = m.trades.filter((t) => t.side === "sell").reduce((s, t) => s + t.tokenAmount, 0);
+          return !(b > 0 && sd >= b * 0.95);
+        })
+        .slice(0, 8)
+        .map(async (m) => {
+        const own = await a.walletTrades(m.wallet, token, from, to, 1).catch(() => [] as Trade[]);
+        const byTx = new Map(m.trades.map((t) => [t.tx, t]));
+        for (const t of own) byTx.set(t.tx, t);
+        m.trades = [...byTx.values()].sort((x, y) => x.ts - y.ts);
+        const fb = m.trades.find((t) => t.side === "buy");
+        if (fb) m.firstBuyOffset = fb.ts - t0!;
+      }),
+    );
+  await enrich(crew);
   const activeCrew = crew.filter((c) => c.trades.length);
 
   // Wallets that bought in the minutes right before the post. Remembered per caller: a wallet seen early
@@ -160,6 +187,7 @@ export async function buildCard(raw: string, hint?: InputHint): Promise<Card> {
       (seen >= 2 ? activeCrew : early).push(member);
     }
     if (histKey) await kvSet(histKey, hist);
+    await enrich([...early, ...activeCrew.filter((m) => m.tier === "behaviour" && !crew.includes(m))]);
   }
 
   const known2 = [...callerWalletsOut, ...activeCrew];

@@ -71,7 +71,27 @@ async function readTelegramPost(channel: string, id: string): Promise<{ text: st
 }
 
 // Turns whatever the user pasted into a Call. Throws InputError with a plain message.
+// 0x addresses are read as Base. If the token only trades on another EVM chain, say so instead of "no trades".
+async function checkEvmChain(call: Call): Promise<Call> {
+  if (call.token.chain !== "base") return call;
+  try {
+    const r = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${call.token.address}`, { cache: "no-store" });
+    const pairs = ((await r.json()).pairs || []) as { chainId: string }[];
+    if (pairs.length && !pairs.some((p) => p.chainId === "base")) {
+      const other = pairs[0].chainId;
+      throw new InputError(`Wingman reads Solana and Base. This token trades on ${other.charAt(0).toUpperCase() + other.slice(1)}, so there is nothing we can read or ride yet.`);
+    }
+  } catch (e) {
+    if (e instanceof InputError) throw e;
+  }
+  return call;
+}
+
 export async function readInput(raw: string, hint?: InputHint): Promise<Call> {
+  return checkEvmChain(await readInputRaw(raw, hint));
+}
+
+async function readInputRaw(raw: string, hint?: InputHint): Promise<Call> {
   const input = raw.trim();
   const tg = input.match(/(?:t\.me|telegram\.me)\/(?:s\/)?([A-Za-z0-9_]{4,32})\/(\d+)/);
   if (tg && !/^(joinchat|addstickers|share)$/i.test(tg[1])) {
