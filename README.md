@@ -6,6 +6,8 @@ Live at **[wingman.jdollar.site](https://wingman.jdollar.site)** on Base and Sol
 
 Someone posts a coin. You buy. Their crew sells into you an hour later and you find out from the chart. Wingman fixes the part you can't see.
 
+This is documented: on Nov 5 2026, [Bubblemaps](https://blog.bubblemaps.io/bubblemaps-investigates-crypto-kol-moves-onchain/) traced one KOL's 5 linked wallets buying before 61% of his 534 October calls, about 20 seconds ahead, and selling within minutes for an estimated $130K. That took an investigation. Wingman does the same kind of read on any call, in seconds, before you buy.
+
 1. **Paste the call.** An X post, a public Telegram channel post, a Farcaster cast, or a token address with the caller's @handle. Or forward it to [@wingmancheckerbot](https://t.me/wingmancheckerbot) on Telegram.
 2. **Get the answer first.** Wingman reads every trade of that token around the post and leads with one line: CREW STILL IN, CREW IS SELLING, or CREW IS OUT. DON'T CHASE. Then what happened, with exact times and every transaction linked.
 3. **Ride it.** Buy from your own wallet with an exit armed. The moment any watched wallet sells, Wingman sells your position. You leave when they leave.
