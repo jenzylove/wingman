@@ -53,7 +53,7 @@ const SOL_PROGRAMS = new Set([
   "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
   "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
   "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL",
-  "JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUJoi5QNyVTaV4",
+  "JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4",
   "SysvarRecentB1ockHashes11111111111111111111",
 ]);
 function checkSolTx(tx: VersionedTransaction, owner: string) {
