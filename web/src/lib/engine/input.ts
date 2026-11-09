@@ -78,8 +78,10 @@ async function checkEvmChain(call: Call): Promise<Call> {
     const r = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${call.token.address}`, { cache: "no-store" });
     const pairs = ((await r.json()).pairs || []) as { chainId: string }[];
     if (pairs.length && !pairs.some((p) => p.chainId === "base")) {
-      const other = pairs[0].chainId;
-      throw new InputError(`Wingman reads Solana and Base. This token trades on ${other.charAt(0).toUpperCase() + other.slice(1)}, so there is nothing we can read or ride yet.`);
+      const id = pairs[0].chainId;
+      const names: Record<string, string> = { bsc: "BNB Chain", ethereum: "Ethereum", arbitrum: "Arbitrum", polygon: "Polygon", optimism: "Optimism", avalanche: "Avalanche", blast: "Blast", linea: "Linea", zksync: "zkSync", sonic: "Sonic", hyperevm: "HyperEVM" };
+      const other = names[id] || id.charAt(0).toUpperCase() + id.slice(1);
+      throw new InputError(`Wingman reads Solana and Base. This token trades on ${other}, so there is nothing we can read or ride yet.`);
     }
   } catch (e) {
     if (e instanceof InputError) throw e;
