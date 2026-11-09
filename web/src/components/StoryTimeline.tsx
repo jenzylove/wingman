@@ -86,7 +86,13 @@ export default function StoryTimeline({ card }: { card: Card }) {
   }
 
   // selling
-  const sells = insiders.flatMap((m) => m.trades.filter((t) => t.side === "sell")).sort((a, b) => a.ts - b.ts);
+  // Only sells that come after that wallet's own first buy in view, so the story never sells before it buys.
+  const sells = insiders
+    .flatMap((m) => {
+      const firstBuy = Math.min(...m.trades.filter((t) => t.side === "buy").map((t) => t.ts));
+      return m.trades.filter((t) => t.side === "sell" && t.ts >= firstBuy);
+    })
+    .sort((a, b) => a.ts - b.ts);
   if (sells[0]) lines.push({ ts: sells[0].ts, text: `${group} started selling`, tx: sells[0].tx, tone: "sell", order: 5 });
   if (stance === "out" && holding.length === 0 && sells.length > 1) {
     const last = sells[sells.length - 1];
