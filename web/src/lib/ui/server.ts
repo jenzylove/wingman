@@ -4,18 +4,16 @@ import type { CallerProfile } from "./api";
 
 /** Absolute origin of this deployment, for server side calls to our own API. */
 export async function siteOrigin(): Promise<string> {
+  // Pinned to our own URL first, so a forged Host header can't point server fetches elsewhere.
   const env = process.env.NEXT_PUBLIC_SITE_URL;
+  if (env) return env.replace(/\/$/, "");
   try {
     const h = await headers();
-    const host = h.get("x-forwarded-host") ?? h.get("host");
-    if (host) {
-      const proto = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") || host.startsWith("127.") ? "http" : "https");
-      return `${proto}://${host}`;
-    }
+    const host = h.get("host");
+    if (host && /^(localhost|127\.0\.0\.1)(:\d+)?$/.test(host)) return `http://${host}`;
   } catch {
     // no request scope
   }
-  if (env) return env.replace(/\/$/, "");
   if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
   return "http://localhost:3000";
 }
