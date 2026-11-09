@@ -10,6 +10,7 @@ const COLS = [
       { href: "/stake", label: "Stake $VIBES" },
       { href: "/proof", label: "Proof" },
       { href: "https://t.me/wingmancheckerbot", label: "Telegram bot" },
+      { href: "https://x.com/callwingman", label: "X @callwingman" },
     ],
   },
   {

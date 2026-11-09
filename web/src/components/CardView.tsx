@@ -169,7 +169,7 @@ export default function CardView({ card: initial, shareable = true }: { card: Ca
 
   function postOnX() {
     const url = `${window.location.origin}/card/${encodeURIComponent(card.id)}`;
-    window.open(`https://x.com/intent/post?text=${encodeURIComponent(`${STANCE_HEADLINE[st.stance]} ${card.verdictLine}`)}&url=${encodeURIComponent(url)}`, "_blank", "noopener");
+    window.open(`https://x.com/intent/post?text=${encodeURIComponent(`${STANCE_HEADLINE[st.stance]} ${card.verdictLine}`)}&url=${encodeURIComponent(url)}&via=callwingman`, "_blank", "noopener");
   }
 
   const holdingWallets = (c: Card) => stanceOf(c).holding.map((m) => m.wallet);

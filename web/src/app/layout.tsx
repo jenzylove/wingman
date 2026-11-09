@@ -20,7 +20,7 @@ export const metadata: Metadata = {
   description:
     "Paste a call and see what the caller and their crew did around the post. Ride it with an exit that sells the moment a watched crew wallet sells. Solana and Base.",
   openGraph: { siteName: "Wingman", type: "website" },
-  twitter: { card: "summary_large_image" },
+  twitter: { card: "summary_large_image", site: "@callwingman" },
 };
 
 export const viewport: Viewport = {
