@@ -32,7 +32,7 @@ export interface CrewMember {
 }
 
 export interface Call {
-  source: "x" | "farcaster" | "token";
+  source: "x" | "farcaster" | "telegram" | "token";
   url?: string;
   handle?: string; // caller handle without @
   displayName?: string;

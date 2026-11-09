@@ -15,7 +15,10 @@ function decodeEntities(s: string) {
     .replace(/&gt;/g, ">")
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
-    .replace(/&mdash;/g, "-");
+    .replace(/&mdash;/g, "-")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Number(n)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)));
 }
 
 export function findToken(text: string): { chain: Chain; address: string } | null {
@@ -43,9 +46,30 @@ async function tokenFromCashtag(text: string): Promise<{ chain: Chain; address: 
 
 export class InputError extends Error {}
 
+// A post we already know the time and author of, such as a call forwarded to the Telegram bot.
+export type InputHint = { postedAt?: number; handle?: string; displayName?: string; url?: string };
+
+async function readTelegramPost(channel: string, id: string): Promise<{ text: string; postedAt: number; name?: string }> {
+  const r = await fetch(`https://t.me/${channel}/${id}?embed=1&mode=tme`, { cache: "no-store" });
+  const html = r.ok ? await r.text() : "";
+  const when = html.match(/<time[^>]*datetime="([^"]+)"/)?.[1];
+  const body = html.match(/class="tgme_widget_message_text[^"]*"[^>]*>([\s\S]*?)<\/div>/)?.[1];
+  if (!when || body === undefined) throw new InputError("We couldn't read that Telegram post. Only posts in public channels can be read.");
+  const text = decodeEntities(body.replace(/<br\s*\/?>/g, "\n").replace(/<[^>]+>/g, " ")).replace(/\s+/g, " ").trim();
+  const name = html.match(/tgme_widget_message_owner_name[^>]*><span[^>]*>([^<]+)</)?.[1];
+  return { text, postedAt: Math.floor(new Date(when).getTime() / 1000), name: name ? decodeEntities(name) : undefined };
+}
+
 // Turns whatever the user pasted into a Call. Throws InputError with a plain message.
-export async function readInput(raw: string): Promise<Call> {
+export async function readInput(raw: string, hint?: InputHint): Promise<Call> {
   const input = raw.trim();
+  const tg = input.match(/(?:t\.me|telegram\.me)\/(?:s\/)?([A-Za-z0-9_]{4,32})\/(\d+)/);
+  if (tg && !/^(joinchat|addstickers|share)$/i.test(tg[1])) {
+    const post = await readTelegramPost(tg[1], tg[2]);
+    const addr = findToken(post.text) || (await tokenFromCashtag(post.text));
+    if (!addr) throw new InputError("That Telegram post doesn't name a token we can find.");
+    return { source: "telegram", url: `https://t.me/${tg[1]}/${tg[2]}`, handle: tg[1].toLowerCase(), displayName: post.name, text: post.text, postedAt: post.postedAt, token: addr };
+  }
   const x = input.match(/(?:x|twitter)\.com\/([A-Za-z0-9_]{1,15})\/status\/(\d+)/);
   if (x) {
     const url = `https://x.com/${x[1]}/status/${x[2]}`;
@@ -82,6 +106,8 @@ export async function readInput(raw: string): Promise<Call> {
   // "@handle token" or "token @handle" or just a token
   const handle = input.match(/@([A-Za-z0-9_]{1,15})/)?.[1]?.toLowerCase();
   const addr = findToken(input);
+  if (addr && hint?.postedAt)
+    return { source: "telegram", url: hint.url, handle: handle || hint.handle, displayName: hint.displayName, text: input.slice(0, 500), postedAt: hint.postedAt, token: addr };
   if (addr) return { source: "token", handle, token: addr };
   throw new InputError("Paste an X post link, a Farcaster cast link, or a token address (add @handle to check a caller).");
 }

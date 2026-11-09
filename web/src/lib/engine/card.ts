@@ -1,7 +1,7 @@
 import { createHash } from "crypto";
 import type { Call, Card, CrewMember, Trade } from "../types";
 import { kvGet, kvSet } from "../store";
-import { InputError, readInput } from "./input";
+import { InputError, readInput, type InputHint } from "./input";
 import { callerWallets, kolName } from "./wallets";
 import { qualifies, repeatStats, score, splitCrew, CO_BUY_WINDOW } from "./crew";
 import * as sol from "./sol";
@@ -73,8 +73,8 @@ async function learnCrew(a: Adapter, handle: string, wallets: string[], exclude:
   return { stats, tokens: byMint.size };
 }
 
-export async function buildCard(raw: string): Promise<Card> {
-  const call = await readInput(raw);
+export async function buildCard(raw: string, hint?: InputHint): Promise<Card> {
+  const call = await readInput(raw, hint);
   const a = adapters[call.token.chain];
   const token = call.token.address;
   const [meta, quoteUsd, known] = await Promise.all([a.meta(token), a.quoteUsd(), callerWallets(call.handle, call.token.chain)]);
@@ -165,7 +165,7 @@ export async function buildCard(raw: string): Promise<Card> {
   const known2 = [...callerWalletsOut, ...activeCrew];
   const knownTraded = known2.some((m) => m.trades.length);
   const insiders = knownTraded || !early.length ? known2 : early;
-  const scored = score(t0, Boolean(call.postedAt), insiders, windowTrades, quoteUsd, knownTraded || !early.length ? undefined : `${early.length} wallets that bought in the 3 minutes before this post`);
+  const scored = score(t0, Boolean(call.postedAt), insiders, windowTrades, quoteUsd, knownTraded || !early.length ? undefined : `${early.length} wallets that got in early`);
   return {
     id: cardId(call),
     call: { ...call, postedAt: call.postedAt },
