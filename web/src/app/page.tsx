@@ -298,18 +298,18 @@ export default function Home() {
               <a className="link text-ink-2 hover:text-ink" href="https://solscan.io/tx/37aeizy3zK2sooQycNjmkVU4BzXbFjEysKGWyoUQkBzUg8as7wdwg96tubLjvnetj6Wr1EQ22Y2ue8HBiFvgceHk" target="_blank" rel="noreferrer">
                 Wingman exit tx ↗
               </a>
-              <a className="link text-ink-2 hover:text-ink" href="/proof">
+              <Link className="link text-ink-2 hover:text-ink" href="/proof">
                 Every fill ↗
-              </a>
+              </Link>
             </div>
             <p className="mt-8 label">See a real card</p>
             <div className="mt-3 flex flex-wrap gap-x-6 gap-y-2 text-[13px]">
-              <a className="link text-ink-2 hover:text-ink" href="/card/1c9027a0b70d95ee">
+              <Link className="link text-ink-2 hover:text-ink" href="/card/1c9027a0b70d95ee">
                 Crew is out: 5 wallets bought with the caller and sold 2 seconds later ↗
-              </a>
-              <a className="link text-ink-2 hover:text-ink" href="/card/9b9d2e15556e0ef9">
+              </Link>
+              <Link className="link text-ink-2 hover:text-ink" href="/card/9b9d2e15556e0ef9">
                 The $Pepetide Telegram call: early buyers and the exit that fired ↗
-              </a>
+              </Link>
             </div>
             <p className="mt-6 text-[12px] text-ink-3">
               Base, with our own test wallets playing crew and rider: crew sold 21:24:37, the WingmanExit keeper fired 21:24:41, paid in USDC.{" "}
