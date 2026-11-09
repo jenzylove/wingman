@@ -23,12 +23,12 @@ export class ReadError extends Error {}
 let active = 0;
 const waiting: (() => void)[] = [];
 async function slot<T>(fn: () => Promise<T>): Promise<T> {
-  if (active >= 5) await new Promise<void>((r) => waiting.push(r));
+  if (active >= 3) await new Promise<void>((r) => waiting.push(r));
   active++;
   try {
     return await fn();
   } finally {
-    await sleep(120);
+    await sleep(150);
     active--;
     waiting.shift()?.();
   }
