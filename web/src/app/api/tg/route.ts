@@ -4,7 +4,8 @@ import { NextResponse, after } from "next/server";
 import { buildCard } from "@/lib/engine/card";
 import { InputError, type InputHint } from "@/lib/engine/input";
 import { rateOk, saveCard } from "@/lib/store";
-import type { Card, CrewMember } from "@/lib/types";
+import type { Card } from "@/lib/types";
+import { STANCE_HEADLINE, stanceOf } from "@/lib/ui/stance";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -21,23 +22,17 @@ async function tg(method: string, body: Record<string, unknown>) {
   return r.json().catch(() => ({}));
 }
 
-// Who still holds, and whether anyone sold. Mirrors the card's headline.
+// Same answer as the card's headline.
 function stance(card: Card) {
-  const known = [...card.callerWallets, ...card.crew];
-  const pool: CrewMember[] = known.some((m) => m.trades.length) ? known : card.early || [];
-  let sold = 0;
-  const holding: string[] = [];
-  for (const m of pool) {
-    const b = m.trades.filter((t) => t.side === "buy").reduce((a, t) => a + t.tokenAmount, 0);
-    const s = m.trades.filter((t) => t.side === "sell").reduce((a, t) => a + t.tokenAmount, 0);
-    if (s > 0) sold++;
-    if (b > 0 && b - s > b * 0.05) holding.push(m.wallet);
-  }
-  if (!pool.some((m) => m.trades.length)) return { key: "none", head: "NO CREW FOUND", sub: "We couldn't tie any wallets to this call yet." };
-  if (!sold)
-    return { key: "in", head: "CREW STILL IN", sub: `${holding.length} insider wallet${holding.length === 1 ? "" : "s"} bought and none sold. You can ride with an exit armed on them.` };
-  if (holding.length) return { key: "selling", head: "CREW IS SELLING", sub: `${sold} sold, ${holding.length} still holding.` };
-  return { key: "out", head: "CREW IS OUT. DON'T CHASE.", sub: "They already sold. Buying now means buying from them." };
+  const st = stanceOf(card);
+  const n = st.holding.length;
+  const sub = {
+    in: `${n} insider wallet${n === 1 ? "" : "s"} still holding. You can ride with an exit armed on them.`,
+    selling: `Some sold, ${n} still holding.`,
+    out: "They already sold. Buying now means buying from them.",
+    none: "We couldn't tie any wallets to this call yet.",
+  }[st.stance];
+  return { key: st.stance, head: STANCE_HEADLINE[st.stance].toUpperCase(), sub };
 }
 
 function reply(card: Card) {

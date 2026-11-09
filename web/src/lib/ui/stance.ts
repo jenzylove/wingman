@@ -43,6 +43,10 @@ export function stanceOf(card: Card): StanceResult {
   if (insiders.length === 0) return { stance: "none", insiders, earlyOnly, holding };
   const anySold = insiders.some((m) => m.trades.some((t) => t.side === "sell"));
   if (!anySold) return { stance: "in", insiders, earlyOnly, holding };
+  // A little trimming isn't leaving: while they still hold 75% or more of what they bought, the crew is in.
+  const sum = (side: "buy" | "sell") => insiders.flatMap((m) => m.trades).filter((t) => t.side === side).reduce((a, t) => a + t.tokenAmount, 0);
+  const bought = sum("buy");
+  if (bought > 0 && sum("sell") <= bought * 0.25) return { stance: "in", insiders, earlyOnly, holding };
   if (holding.length === 0 || card.summary.stillHoldingPct <= 20) return { stance: "out", insiders, earlyOnly, holding };
   return { stance: "selling", insiders, earlyOnly, holding };
 }
