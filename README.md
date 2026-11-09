@@ -46,7 +46,7 @@ Built solo in about two days with Claude Code (Claude Opus) doing the engineerin
 
 * **Spec first.** [docs/PRD.md](docs/PRD.md) and [docs/PLAN.md](docs/PLAN.md) were written before any code; the PRD now opens with what actually shipped.
 * **Spikes before building.** Exact post times from X post IDs and behavioural crew detection were proven against real trades first: [docs/spikes](docs/spikes).
-* **Parallel agents.** Separate Claude agents ran the redesign, a security audit, and an outside style judge that scored the live app with no build context. Their findings were fixed and verified live; the fixes are listed in [docs/BUILD_LOG.md](docs/BUILD_LOG.md).
+* **Parallel agents.** Separate Claude agents ran the redesign, a security audit, and an independent judge that scored the live app with no build context. Their findings were fixed and verified live; the fixes are listed in [docs/BUILD_LOG.md](docs/BUILD_LOG.md).
 * **Real data, not mocks.** Self tests on mainnet ([web/scripts/base-proof.ts](web/scripts/base-proof.ts), [web/scripts/sol-proof.ts](web/scripts/sol-proof.ts)) and checks that push real trades through every quote path ([web/scripts/check-usdc-paths.ts](web/scripts/check-usdc-paths.ts)). Engine tests: `cd web && npm test`. Contract tests: `cd contracts && forge test`.
 
 ## Fees and $VIBES
