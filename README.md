@@ -6,16 +6,17 @@ Live at **[wingman.jdollar.site](https://wingman.jdollar.site)** on Base and Sol
 
 Someone posts a coin. You buy. Their crew sells into you an hour later and you find out from the chart. Wingman fixes the part you can't see.
 
-1. **Paste the call.** An X post, a Farcaster cast, or a token address with the caller's @handle.
-2. **See what they did.** Wingman reads every trade of that token around the post and shows the caller's wallets and their crew: when each one bought, and whether they already sold.
+1. **Paste the call.** An X post, a public Telegram channel post, a Farcaster cast, or a token address with the caller's @handle. Or forward it to [@wingmancheckerbot](https://t.me/wingmancheckerbot) on Telegram.
+2. **Get the answer first.** Wingman reads every trade of that token around the post and leads with one line: CREW STILL IN, CREW IS SELLING, or CREW IS OUT. DON'T CHASE. Then what happened, with exact times and every transaction linked.
 3. **Ride it.** Buy from your own wallet with an exit armed. The moment any watched wallet sells, Wingman sells your position. You leave when they leave.
 
 ## Proof on mainnet
 
-Both exits were fired by real crew sells, four seconds after the sell landed.
+Exits fire four seconds after a watched wallet sells. The first row is a live one: a real early wallet on a Telegram call sold, and our ride's exit landed four seconds later.
 
 | Chain | Crew sell | Wingman exit |
 |---|---|---|
+| Solana (live) | [4uADvAA2…](https://solscan.io/tx/4uADvAA2bhaAPRmyvzQKisrzhbHQhgbkvc71tZaSJwU8MkHzq1k673gbSaiwCwsomYQ2oREGFQ3e77Cumwuq2Z2g) | [37aeizy3…](https://solscan.io/tx/37aeizy3zK2sooQycNjmkVU4BzXbFjEysKGWyoUQkBzUg8as7wdwg96tubLjvnetj6Wr1EQ22Y2ue8HBiFvgceHk) |
 | Base | [0x6e7c45d7…](https://basescan.org/tx/0x6e7c45d7c740316a49dc72378da58776889546f5565e1907acd441f1ed6f3451) | [0x192ee870…](https://basescan.org/tx/0x192ee870ee0aff8530e4c559a7b1491c80ba09ab914c2f4818a1b1678b6f98ab) |
 | Solana | [2B895t7W…](https://solscan.io/tx/2B895t7WRjubh58fmoTnXzJckTZuiajBCbXKw6Z4NXRNxWv9FWaxXfGLqKZu9GXt8WWXk2JkHTCRoYkayxMxneEf) | [24b66AKb…](https://solscan.io/tx/24b66AKbtPdgr1BsAftWaURG3M8vc6nWYaxP85JDjqt7HyUJXwrz32MQuFmDyBbd3WkyYpVFxFSQMFhmVRYtMznc) |
 
