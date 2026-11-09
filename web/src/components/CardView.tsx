@@ -11,24 +11,24 @@ import TierBadge from "./TierBadge";
 import { addressUrl, chainName, dateTimeUtc, dur, num, quoteSymbol, short, tokenUrl, usd } from "@/lib/ui/format";
 
 const VERDICT: Record<Card["verdict"], { label: string; cls: string }> = {
-  sold_into_followers: { label: "Sold into followers", cls: "text-red-ink ring-red" },
-  exited: { label: "Insiders already out", cls: "text-amber-ink ring-amber" },
-  clean: { label: "No insider selling seen", cls: "text-green-ink ring-green" },
-  unknown: { label: "Not enough data", cls: "text-ink-3 ring-line-2" },
+  sold_into_followers: { label: "Sold into followers", cls: "bg-accent text-on-accent border-accent" },
+  exited: { label: "Insiders already out", cls: "text-accent-ink border-accent" },
+  clean: { label: "No insider selling seen", cls: "text-ink border-ink" },
+  unknown: { label: "Not enough data", cls: "text-ink-2 border-line-2" },
 };
 
-function Stat({ label, children, sub, tone = "ink" }: { label: string; children: React.ReactNode; sub?: string; tone?: "ink" | "red" | "amber" | "green" }) {
-  const toneCls = { ink: "text-ink", red: "text-red-ink", amber: "text-amber-ink", green: "text-green-ink" }[tone];
+function Stat({ label, children, sub, tone = "ink" }: { label: string; children: React.ReactNode; sub?: string; tone?: "ink" | "accent" }) {
+  const toneCls = { ink: "text-ink", accent: "text-accent" }[tone];
   return (
-    <div className="min-w-0">
-      <p className="text-[11px] uppercase tracking-[0.16em] text-ink-3">{label}</p>
-      <p className={`mt-2 font-display text-[22px] font-semibold leading-none sm:text-[26px] ${toneCls}`}>{children}</p>
-      {sub && <p className="mt-1.5 text-[12px] text-ink-3">{sub}</p>}
+    <div className="min-w-0 border-t border-line-2 pt-4">
+      <p className="label">{label}</p>
+      <p className={`mt-3 font-display text-[36px] leading-none normal-case sm:text-[48px] ${toneCls}`}>{children}</p>
+      {sub && <p className="mt-2 text-[12px] text-ink-3">{sub}</p>}
     </div>
   );
 }
 
-function OffsetStat({ label, offset, tone, refName = "the post" }: { label: string; offset?: number; tone: "red" | "amber"; refName?: string }) {
+function OffsetStat({ label, offset, tone, refName = "the post" }: { label: string; offset?: number; tone: "accent" | "ink"; refName?: string }) {
   if (offset === undefined || offset === null) {
     return (
       <Stat label={label} sub="No trade seen from known wallets">
@@ -48,14 +48,16 @@ function WalletList({ title, help, members, chain }: { title: string; help: stri
   if (members.length === 0) return null;
   return (
     <div>
-      <h3 className="font-display text-[14px] font-semibold text-ink">{title}</h3>
-      <p className="mt-1 text-[12px] text-ink-3">{help}</p>
-      <ul className="mt-3 divide-y divide-[var(--line)]">
+      <h3 className="flex items-baseline gap-3 font-display text-[26px] leading-none text-ink">
+        {title} <span className="font-mono text-[12px] tracking-normal text-ink-3">{members.length}</span>
+      </h3>
+      <p className="mt-2 max-w-md text-[13px] leading-relaxed text-ink-3">{help}</p>
+      <ul className="mt-4 divide-y divide-[var(--line)] border-y border-line-2">
         {members.map((m) => (
           <li key={m.wallet} className="flex flex-col gap-1 py-3 sm:flex-row sm:items-center sm:gap-4">
             <div className="flex min-w-0 items-center gap-2 sm:w-[220px] sm:shrink-0">
               <TierBadge tier={m.tier} />
-              <a href={addressUrl(chain, m.wallet)} target="_blank" rel="noreferrer" className="truncate text-[13px] text-ink hover:underline">
+              <a href={addressUrl(chain, m.wallet)} target="_blank" rel="noreferrer" className="link truncate font-mono text-[13px] text-ink">
                 {short(m.wallet, 5, 5)}
               </a>
             </div>
@@ -64,8 +66,8 @@ function WalletList({ title, help, members, chain }: { title: string; help: stri
               {m.repeat ? <span className="text-ink-3"> ({m.repeat.hits} of {m.repeat.of} calls)</span> : null}
             </p>
             {m.proofUrl && (
-              <a href={m.proofUrl} target="_blank" rel="noreferrer" className="shrink-0 text-[12px] text-ink-3 underline underline-offset-2 hover:text-ink">
-                Proof
+              <a href={m.proofUrl} target="_blank" rel="noreferrer" className="shrink-0 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3 hover:text-ink">
+                Proof ↗
               </a>
             )}
           </li>
@@ -84,6 +86,7 @@ export default function CardView({ card, shareable = true }: { card: Card; share
   const tokenName = call.token.symbol ? `$${call.token.symbol}` : short(call.token.address);
   const v = VERDICT[card.verdict];
   const net = summary.insiderNetQuote;
+  const early = card.early ?? [];
 
   async function share() {
     const url = `${window.location.origin}/card/${encodeURIComponent(card.id)}`;
@@ -104,8 +107,8 @@ export default function CardView({ card, shareable = true }: { card: Card; share
   return (
     <article className="fade-up">
       {/* header */}
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-[12px] text-ink-3">
-        <span className={`inline-flex h-6 items-center rounded-full px-2.5 text-[11px] font-medium uppercase tracking-[0.14em] ring-1 ${v.cls}`}>{v.label}</span>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 font-mono text-[12px] text-ink-3">
+        <span className={`inline-flex h-6 items-center border px-2 text-[11px] uppercase tracking-[0.14em] ${v.cls}`}>{v.label}</span>
         <span>{chainName(chain)}</span>
         <span aria-hidden>·</span>
         <a href={tokenUrl(chain, call.token.address)} target="_blank" rel="noreferrer" className="text-ink-2 hover:text-ink">
@@ -115,7 +118,7 @@ export default function CardView({ card, shareable = true }: { card: Card; share
         {call.handle && (
           <>
             <span aria-hidden>·</span>
-            <Link href={`/c/${encodeURIComponent(call.handle)}`} className="text-amber-ink hover:underline">
+            <Link href={`/c/${encodeURIComponent(call.handle)}`} className="link text-ink">
               @{call.handle}
             </Link>
           </>
@@ -128,54 +131,54 @@ export default function CardView({ card, shareable = true }: { card: Card; share
         )}
       </div>
 
-      <h1 className="mt-5 max-w-4xl font-display text-[26px] font-semibold leading-[1.15] tracking-tight text-ink text-balance sm:text-[38px]">
+      <h1 className="mt-6 max-w-5xl font-display text-[38px] leading-[0.95] normal-case text-ink text-balance sm:text-[60px] lg:text-[72px]">
         {card.verdictLine}
       </h1>
 
       {call.text && (
-        <blockquote className="mt-5 max-w-2xl border-l-2 border-amber pl-4 text-[14px] leading-relaxed text-ink-2">
+        <blockquote className="mt-6 max-w-2xl border-l border-line-2 pl-4 text-[15px] leading-relaxed text-ink-2">
           “{call.text}”
           {call.url && (
-            <a href={call.url} target="_blank" rel="noreferrer" className="ml-2 text-[12px] text-ink-3 underline underline-offset-2 hover:text-ink">
-              Open post
+            <a href={call.url} target="_blank" rel="noreferrer" className="ml-2 whitespace-nowrap font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3 hover:text-ink">
+              Open post ↗
             </a>
           )}
         </blockquote>
       )}
 
       {/* actions */}
-      <div className="mt-7 flex flex-wrap gap-2">
+      <div className="mt-8 flex flex-wrap gap-2">
         <button
           type="button"
           onClick={() => setRideOpen(true)}
-          className="h-11 rounded-xl bg-green px-6 font-display text-[13px] font-semibold text-on-accent transition hover:brightness-110"
+          className="group inline-flex h-12 items-center gap-3 bg-accent px-6 font-display text-[20px] text-on-accent transition hover:brightness-110 active:scale-[0.98]"
         >
-          Ride with exit armed
+          Ride with exit armed <span className="nudge" aria-hidden>↗</span>
         </button>
         {shareable && (
           <>
-            <button type="button" onClick={share} className="h-11 rounded-xl bg-bg-3 px-5 text-[13px] text-ink transition hover:bg-bg-2" aria-live="polite">
+            <button type="button" onClick={share} className="h-12 border border-line-2 px-5 font-mono text-[12px] uppercase tracking-[0.14em] text-ink transition-colors hover:border-ink" aria-live="polite">
               {copied ? "Link copied" : "Share"}
             </button>
-            <button type="button" onClick={postOnX} className="h-11 rounded-xl bg-bg-3 px-5 text-[13px] text-ink transition hover:bg-bg-2">
+            <button type="button" onClick={postOnX} className="h-12 border border-line-2 px-5 font-mono text-[12px] uppercase tracking-[0.14em] text-ink transition-colors hover:border-ink">
               Post on X
             </button>
           </>
         )}
         {call.handle && (
-          <Link href={`/c/${encodeURIComponent(call.handle)}`} className="inline-flex h-11 items-center rounded-xl px-4 text-[13px] text-ink-2 hover:text-ink">
-            View caller →
+          <Link href={`/c/${encodeURIComponent(call.handle)}`} className="group inline-flex h-12 items-center gap-2 px-4 font-mono text-[12px] uppercase tracking-[0.14em] text-ink-2 hover:text-ink">
+            View caller <span className="nudge" aria-hidden>→</span>
           </Link>
         )}
       </div>
 
       {/* numbers */}
-      <div className="mt-12 grid grid-cols-2 gap-x-6 gap-y-8 hairline-t pt-8 lg:grid-cols-4">
-        <OffsetStat label="First insider buy" offset={summary.firstInsiderBuyOffset} tone="amber" refName={typeof card.call.postedAt === "number" ? "the post" : "the caller's first buy"} />
-        <OffsetStat label="First insider sell" offset={summary.firstInsiderSellOffset} tone="red" refName={typeof card.call.postedAt === "number" ? "the post" : "the caller's first buy"} />
+      <div className="mt-14 grid grid-cols-2 gap-x-6 gap-y-10 lg:grid-cols-4">
+        <OffsetStat label="First insider buy" offset={summary.firstInsiderBuyOffset} tone="ink" refName={typeof card.call.postedAt === "number" ? "the post" : "the caller's first buy"} />
+        <OffsetStat label="First insider sell" offset={summary.firstInsiderSellOffset} tone="accent" refName={typeof card.call.postedAt === "number" ? "the post" : "the caller's first buy"} />
         <Stat
           label="Insider net take"
-          tone={net > 0 ? "red" : "ink"}
+          tone={net > 0 ? "accent" : "ink"}
           sub={summary.insiderNetUsd !== undefined ? `about ${usd(summary.insiderNetUsd)}` : summary.insidersSold ? "from sells minus buys" : "nothing sold yet"}
         >
           <CountUp value={net} format={(n) => `${n > 0 ? "+" : ""}${num(n, 2)} ${sym}`} />
@@ -185,14 +188,14 @@ export default function CardView({ card, shareable = true }: { card: Card; share
         </Stat>
       </div>
 
-      <div className="mt-10 max-w-3xl">
+      <div className="mt-12 max-w-3xl">
         <CoverageMeter pct={card.coverage.earlyVolumeAttributedPct} note={card.coverage.note} refName={typeof card.call.postedAt === "number" ? "the post" : "the caller's first buy"} />
       </div>
 
       {/* flight strip */}
-      <section className="mt-14" aria-labelledby="strip-title">
-        <div className="flex items-baseline justify-between gap-4">
-          <h2 id="strip-title" className="font-display text-[13px] font-semibold uppercase tracking-[0.2em] text-ink-2">
+      <section className="mt-16" aria-labelledby="strip-title">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+          <h2 id="strip-title" className="font-display text-[32px] leading-none text-ink sm:text-[40px]">
             Flight strip
           </h2>
           <p className="text-[12px] text-ink-3">Tap a marker to open its transaction</p>
@@ -203,10 +206,20 @@ export default function CardView({ card, shareable = true }: { card: Card; share
       </section>
 
       {/* wallets */}
-      <section className="mt-14 grid gap-12 lg:grid-cols-2">
-        <WalletList title="Caller wallets" help="Wallets we can tie to the caller directly." members={card.callerWallets} chain={chain} />
-        <WalletList title="Crew" help="Wallets funded by the caller or that keep buying right before the caller posts." members={card.crew} chain={chain} />
+      <section className="mt-16 grid gap-14 lg:grid-cols-2">
+        <WalletList title="Caller wallets" help="Wallets the caller claimed, or that are linked to them on the public Kolscan KOL list or a verified Farcaster account." members={card.callerWallets} chain={chain} />
+        <WalletList title="Crew" help="Wallets that keep buying with this caller across recent tokens, or were early on 2 or more of their posts." members={card.crew} chain={chain} />
       </section>
+      {early.length > 0 && (
+        <section className="mt-14">
+          <WalletList
+            title="Early buyers"
+            help="Bought in the 3 minutes before the post. Not tied to the caller yet. A wallet early on 2 or more of this caller's posts becomes crew."
+            members={early}
+            chain={chain}
+          />
+        </section>
+      )}
       {card.copyBots.length > 0 && (
         <section className="mt-12">
           <WalletList
@@ -218,7 +231,7 @@ export default function CardView({ card, shareable = true }: { card: Card; share
         </section>
       )}
 
-      <p className="mt-10 text-[11px] text-ink-3">
+      <p className="mt-12 font-mono text-[11px] text-ink-3">
         Computed {dateTimeUtc(card.computedAt)} · Card {card.id}
       </p>
 

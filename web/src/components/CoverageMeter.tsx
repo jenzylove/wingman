@@ -11,19 +11,19 @@ export default function CoverageMeter({ pct, note, refName = "the post" }: { pct
       <div className="flex items-baseline justify-between gap-4">
         <p className="text-[13px] text-ink-2">
           We can attribute{" "}
-          <span className="font-display text-[15px] font-semibold text-ink">
+          <span className="font-display text-[22px] leading-none text-ink">
             <CountUp value={v} format={(n) => `${Math.round(n)}%`} />
           </span>{" "}
           of buy volume before {refName} to known wallets.
         </p>
       </div>
-      <div className="mt-3 flex h-3 gap-[3px]" role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(v)} aria-label="Coverage of early buy volume">
+      <div className="mt-3 flex h-2.5 gap-[3px]" role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(v)} aria-label="Coverage of early buy volume">
         {Array.from({ length: segments }, (_, i) => (
           <span
             key={i}
-            className="flex-1 rounded-[1px] transition-colors"
+            className="flex-1 transition-colors"
             style={{
-              background: i < lit ? "var(--green)" : "var(--line-2)",
+              background: i < lit ? "var(--ink)" : "var(--line-2)",
               opacity: i < lit ? 0.55 + 0.45 * (i / segments) : 1,
               transitionDelay: `${i * 18}ms`,
             }}

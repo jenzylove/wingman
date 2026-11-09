@@ -8,10 +8,10 @@ import { chainName, clock, dateTimeUtc, dur, num, quoteSymbol, short, toMs, toke
 
 const STATUS: Record<ArmedExit["status"], { label: string; cls: string }> = {
   pending: { label: "Setting up", cls: "text-ink-3" },
-  armed: { label: "Armed", cls: "text-green-ink" },
-  fired: { label: "Exited", cls: "text-amber-ink" },
+  armed: { label: "Armed", cls: "text-ink" },
+  fired: { label: "Exited", cls: "text-accent-ink" },
   cancelled: { label: "Cancelled", cls: "text-ink-3" },
-  failed: { label: "Failed", cls: "text-red-ink" },
+  failed: { label: "Failed", cls: "text-accent-ink" },
 };
 
 export function receiptText(x: ArmedExit): string | null {
@@ -58,23 +58,23 @@ export default function ExitRow({ x, showOwner = false, onChange }: { x: ArmedEx
   return (
     <li className="grid gap-4 py-6 md:grid-cols-[150px_1fr_auto] md:items-start">
       <div>
-        <p className={`flex items-center gap-2 font-display text-[13px] font-semibold uppercase tracking-[0.14em] ${s.cls}`}>
-          {x.status === "armed" && <span className="pulse-dot h-1.5 w-1.5 rounded-full bg-green" aria-hidden />}
+        <p className={`flex items-center gap-2 font-mono text-[12px] uppercase tracking-[0.16em] ${s.cls}`}>
+          {x.status === "armed" && <span className="pulse-dot h-1.5 w-1.5 rounded-full bg-accent" aria-hidden />}
           {s.label}
         </p>
         <p className="mt-1 text-[12px] text-ink-3">{chainName(x.chain)}</p>
-        {x.selfTest && <p className="mt-1 text-[11px] uppercase tracking-[0.14em] text-amber-ink">Our own test wallets</p>}
+        {x.selfTest && <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-2">Our own test wallets</p>}
       </div>
 
       <div className="min-w-0">
         {receipt && x.trigger && x.exit ? (
-          <div className="font-display text-[16px] leading-snug text-ink sm:text-[18px]">
+          <div className="font-display text-[22px] leading-[1.05] text-ink sm:text-[26px]">
             <p>
-              Crew started selling <span className="tabular-nums text-red-ink">{clock(x.trigger.ts)}</span>.
+              Crew started selling <span className="tabular-nums text-accent">{clock(x.trigger.ts)}</span>
             </p>
             <p>
-              You were out <span className="tabular-nums text-green-ink">{clock(x.exit.ts)}</span>
-              {lag !== null && <span className="text-ink-3"> ({dur(lag)} later)</span>}.
+              You were out <span className="tabular-nums text-ink">{clock(x.exit.ts)}</span>
+              {lag !== null && <span className="font-sans text-[14px] normal-case text-ink-3"> · {dur(lag)} later</span>}
             </p>
           </div>
         ) : (
@@ -86,7 +86,7 @@ export default function ExitRow({ x, showOwner = false, onChange }: { x: ArmedEx
             . Max slippage {x.maxSlippageBps / 100}%.
           </p>
         )}
-        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-ink-3">
+        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-ink-3">
           <span>Armed {dateTimeUtc(x.armedAt)}</span>
           {showOwner && <span>Owner {short(x.owner)}</span>}
           {x.armTx && (
@@ -109,22 +109,22 @@ export default function ExitRow({ x, showOwner = false, onChange }: { x: ArmedEx
 
       <div className="flex items-center gap-3 md:flex-col md:items-end">
         {x.exit && (
-          <p className="font-display text-[20px] font-semibold tabular-nums text-ink">
+          <p className="font-display text-[32px] leading-none tabular-nums text-ink">
             {x.exit.usdOut !== undefined ? usd(x.exit.usdOut) : `${num(x.exit.quoteOut, 4)} ${quoteSymbol(x.chain)}`}
           </p>
         )}
         {receipt && (
-          <button type="button" onClick={copy} className="h-9 rounded-lg bg-bg-3 px-3 text-[12px] text-ink hover:bg-bg-2">
+          <button type="button" onClick={copy} className="h-9 border border-line-2 px-3 font-mono text-[11px] uppercase tracking-[0.12em] text-ink transition-colors hover:border-ink">
             {copied ? "Receipt copied" : "Copy receipt"}
           </button>
         )}
         {canCancel && (
-          <button type="button" onClick={cancel} disabled={cancelling} className="h-9 rounded-lg px-3 text-[12px] text-ink-3 ring-1 ring-line-2 hover:text-red-ink disabled:opacity-50">
+          <button type="button" onClick={cancel} disabled={cancelling} className="h-9 border border-line-2 px-3 font-mono text-[11px] uppercase tracking-[0.12em] text-ink-2 transition-colors hover:border-accent hover:text-accent-ink disabled:opacity-50">
             {cancelling ? "Cancelling…" : "Cancel exit"}
           </button>
         )}
         {cancelError && (
-          <p className="max-w-[240px] text-[12px] text-red-ink" role="alert">
+          <p className="max-w-[240px] text-[12px] text-accent-ink" role="alert">
             {cancelError}
           </p>
         )}

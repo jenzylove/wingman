@@ -7,7 +7,7 @@ export default async function CheckPage({ searchParams }: { searchParams: Promis
   const sp = await searchParams;
   const q = (Array.isArray(sp.q) ? sp.q[0] : sp.q)?.trim() ?? "";
   return (
-    <div className="mx-auto max-w-6xl px-4 pb-10 pt-8 sm:px-6 sm:pt-12">
+    <div className="mx-auto max-w-7xl px-4 pb-10 pt-8 sm:px-6 sm:pt-12 lg:px-10">
       <CheckRunner key={q} q={q} />
     </div>
   );

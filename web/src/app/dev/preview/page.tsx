@@ -9,8 +9,8 @@ export const metadata = { title: "Dev preview", robots: { index: false } };
 export default function DevPreview() {
   if (process.env.NODE_ENV === "production") notFound();
   return (
-    <div className="mx-auto max-w-6xl px-4 pb-10 pt-8 sm:px-6">
-      <p className="mb-8 rounded-lg bg-[color-mix(in_srgb,var(--amber)_14%,transparent)] px-3 py-2 text-[12px] text-amber-ink">
+    <div className="mx-auto max-w-7xl px-4 pb-10 pt-8 sm:px-6 lg:px-10">
+      <p className="mb-8 border-l-2 border-accent px-3 py-2 font-mono text-[12px] text-ink-2">
         Dev preview with fixture data. This route does not exist in production.
       </p>
       <CardView card={fixtureCard} />

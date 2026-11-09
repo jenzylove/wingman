@@ -12,13 +12,13 @@ function OwnerExits({ owner, label }: { owner: string; label: string }) {
   const q = useQuery({ queryKey: ["exits", owner], queryFn: () => getExits(owner), refetchInterval: 10_000 });
   return (
     <section className="mt-10">
-      <h2 className="flex items-baseline gap-3 font-display text-[13px] font-semibold uppercase tracking-[0.2em] text-ink-2">
+      <h2 className="flex items-baseline gap-3 font-display text-[32px] leading-none text-ink">
         {label} <span className="font-mono text-[12px] normal-case tracking-normal text-ink-3">{short(owner, 6, 4)}</span>
       </h2>
       {q.isPending ? (
         <p className="mt-4 text-[14px] text-ink-3">Loading your exits…</p>
       ) : q.isError ? (
-        <p className="mt-4 text-[14px] text-red-ink" role="alert">
+        <p className="mt-4 text-[14px] text-accent-ink" role="alert">
           {q.error instanceof Error ? q.error.message : "Could not load exits."}{" "}
           <button className="underline underline-offset-2" onClick={() => q.refetch()}>
             Retry
@@ -27,7 +27,7 @@ function OwnerExits({ owner, label }: { owner: string; label: string }) {
       ) : q.data.length === 0 ? (
         <p className="mt-4 text-[14px] text-ink-2">No exits armed from this wallet yet. Check a call and press Ride.</p>
       ) : (
-        <ul className="mt-2 divide-y divide-[var(--line)]">
+        <ul className="mt-4 divide-y divide-[var(--line)] border-y border-line-2">
           {[...q.data]
             .sort((a, b) => b.armedAt - a.armedAt)
             .map((x) => (

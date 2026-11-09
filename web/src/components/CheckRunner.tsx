@@ -5,6 +5,7 @@ import type { Card } from "@/lib/types";
 import { postCard } from "@/lib/ui/api";
 import CardView from "./CardView";
 import PasteBox from "./PasteBox";
+import Constellation from "./Constellation";
 
 /** Rough time each stage tends to start. Used only to say what is probably happening now. */
 const STAGES = [
@@ -61,10 +62,13 @@ export default function CheckRunner({ q }: { q: string }) {
 
   if (!q) {
     return (
-      <div className="mx-auto max-w-2xl py-16">
-        <h1 className="font-display text-[28px] font-semibold">Check a call</h1>
-        <p className="mt-2 text-[14px] text-ink-2">Paste an X post link, a cast, a token address or a caller handle.</p>
-        <div className="mt-8">
+      <div className="max-w-3xl py-10 sm:py-16">
+        <p className="label text-accent-ink">Check</p>
+        <h1 className="mt-4 font-display text-[64px] leading-[0.88] sm:text-[104px]">Check a call</h1>
+        <p className="mt-5 max-w-xl text-[16px] leading-relaxed text-ink-2">
+          Paste an X post link, a Farcaster cast, or a token address. Add the caller&apos;s @handle next to a token address to check that caller.
+        </p>
+        <div className="mt-10">
           <PasteBox autoFocus />
         </div>
       </div>
@@ -76,11 +80,11 @@ export default function CheckRunner({ q }: { q: string }) {
   if (state.kind === "error") {
     return (
       <div className="mx-auto max-w-2xl py-16 fade-up" role="alert">
-        <p className="text-[11px] uppercase tracking-[0.2em] text-red-ink">Could not build the card</p>
-        <h1 className="mt-3 font-display text-[24px] font-semibold leading-tight sm:text-[30px]">{state.message}</h1>
-        <p className="mt-3 break-all text-[13px] text-ink-3">You checked: {q}</p>
-        <div className="mt-6 flex flex-wrap gap-2">
-          <button type="button" onClick={run} className="h-11 rounded-xl bg-amber px-6 font-display text-[13px] font-semibold text-on-accent">
+        <p className="label text-accent-ink">Could not build the card</p>
+        <h1 className="mt-4 font-display text-[36px] leading-[0.95] sm:text-[52px]">{state.message}</h1>
+        <p className="mt-4 break-all font-mono text-[12px] text-ink-3">You checked: {q}</p>
+        <div className="mt-8 flex flex-wrap gap-2">
+          <button type="button" onClick={run} className="h-12 bg-ink px-6 font-display text-[20px] text-bg transition hover:bg-accent">
             Try again
           </button>
         </div>
@@ -100,9 +104,15 @@ export default function CheckRunner({ q }: { q: string }) {
   const slow = elapsed > 35;
 
   return (
-    <div className="mx-auto max-w-2xl py-12 sm:py-16" aria-busy="true">
-      <p className="text-[11px] uppercase tracking-[0.2em] text-green-ink">Working</p>
-      <h1 className="mt-3 break-all font-display text-[20px] font-semibold leading-snug sm:text-[24px]">{q}</h1>
+    <div className="mx-auto max-w-2xl py-10 sm:py-14" aria-busy="true">
+      <div className="relative -mx-4 h-[180px] [mask-image:radial-gradient(ellipse_60%_70%_at_50%_50%,black_40%,transparent_85%)] sm:mx-0 sm:h-[220px]" aria-hidden>
+        <Constellation focusX={0.5} focusY={0.5} mobileFocusX={0.5} mobileFocusY={0.5} density={0.55} crewCount={5} seed={11} />
+      </div>
+      <p className="label mt-4 flex items-center gap-2.5 text-ink-2">
+        <span className="pulse-dot h-1.5 w-1.5 rounded-full bg-accent" aria-hidden />
+        Working
+      </p>
+      <h1 className="mt-3 break-all font-mono text-[15px] leading-snug text-ink sm:text-[17px]">{q}</h1>
       <div className="mt-6 h-px w-full overflow-hidden bg-line">
         <div className="scan-bar h-px w-full" />
       </div>
@@ -114,7 +124,7 @@ export default function CheckRunner({ q }: { q: string }) {
             <li key={s.label} className={`flex items-center gap-4 text-[14px] transition ${ahead ? "text-ink-3" : active ? "text-ink" : "text-ink-2"}`}>
               <span className="grid w-5 place-items-center" aria-hidden>
                 {active ? (
-                  <span className="pulse-dot h-2 w-2 rounded-full bg-green" />
+                  <span className="pulse-dot h-2 w-2 rounded-full bg-accent" />
                 ) : ahead ? (
                   <span className="h-1.5 w-1.5 rounded-full bg-line-2" />
                 ) : (
@@ -137,12 +147,12 @@ export default function CheckRunner({ q }: { q: string }) {
             ctrl.current?.abort();
             setState({ kind: "error", message: "You stopped this check." });
           }}
-          className="shrink-0 rounded-lg px-3 py-2 text-ink-2 hover:bg-bg-3 hover:text-ink"
+          className="shrink-0 border border-line-2 px-3 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-2 transition-colors hover:border-ink hover:text-ink"
         >
           Stop
         </button>
       </div>
-      {slow && <p className="mt-4 text-[13px] text-amber-ink">This is taking longer than usual. Busy tokens have more trades to read.</p>}
+      {slow && <p className="mt-4 text-[13px] text-ink">This is taking longer than usual. Busy tokens have more trades to read.</p>}
     </div>
   );
 }

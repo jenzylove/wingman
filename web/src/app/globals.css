@@ -1,69 +1,22 @@
 @import "tailwindcss";
 
-/* Wingman: aviation night ops. Tokens first, dark is the default identity. */
+/*
+  Wingman: black editorial. One accent (signal red), off white for buys and type,
+  neutral greys for everything else. Dark only.
+*/
 :root {
-  --bg: #05070d;
-  --bg-2: #0a0f1a;
-  --bg-3: #111827;
-  --ink: #e8edf7;
-  --ink-2: #a7b1c6;
-  --ink-3: #6f7a91;
-  --line: rgba(160, 180, 220, 0.12);
-  --line-2: rgba(160, 180, 220, 0.22);
-  --amber: #ffb020;
-  --amber-ink: #ffb020;
-  --green: #3dffa2;
-  --green-ink: #3dffa2;
-  --red: #ff4d4d;
-  --red-ink: #ff6b6b;
-  --grid: rgba(61, 255, 162, 0.06);
-  --sweep: rgba(61, 255, 162, 0.16);
-  --on-accent: #05070d;
+  --bg: #050505;
+  --bg-2: #0d0d0d;
+  --bg-3: #171717;
+  --ink: #f2efe9;
+  --ink-2: #b4b4b4;
+  --ink-3: #8a8a8a;
+  --line: rgba(255, 255, 255, 0.09);
+  --line-2: rgba(255, 255, 255, 0.18);
+  --accent: #ff3b1f;
+  --accent-ink: #ff5a3f;
+  --on-accent: #050505;
   color-scheme: dark;
-}
-
-@media (prefers-color-scheme: light) {
-  :root:not([data-theme="dark"]) {
-    --bg: #f6f4ee;
-    --bg-2: #eeebe2;
-    --bg-3: #e4e0d4;
-    --ink: #0b1430;
-    --ink-2: #33405f;
-    --ink-3: #5a6680;
-    --line: rgba(11, 20, 48, 0.12);
-    --line-2: rgba(11, 20, 48, 0.24);
-    --amber: #c27a00;
-    --amber-ink: #8a5200;
-    --green: #00995a;
-    --green-ink: #006e40;
-    --red: #d42424;
-    --red-ink: #b01c1c;
-    --grid: rgba(11, 20, 48, 0.05);
-    --sweep: rgba(0, 153, 90, 0.12);
-    --on-accent: #0b1430;
-    color-scheme: light;
-  }
-}
-
-:root[data-theme="light"] {
-  --bg: #f6f4ee;
-  --bg-2: #eeebe2;
-  --bg-3: #e4e0d4;
-  --ink: #0b1430;
-  --ink-2: #33405f;
-  --ink-3: #5a6680;
-  --line: rgba(11, 20, 48, 0.12);
-  --line-2: rgba(11, 20, 48, 0.24);
-  --amber: #c27a00;
-  --amber-ink: #8a5200;
-  --green: #00995a;
-  --green-ink: #006e40;
-  --red: #d42424;
-  --red-ink: #b01c1c;
-  --grid: rgba(11, 20, 48, 0.05);
-  --sweep: rgba(0, 153, 90, 0.12);
-  --on-accent: #0b1430;
-  color-scheme: light;
 }
 
 @theme inline {
@@ -75,16 +28,12 @@
   --color-ink-3: var(--ink-3);
   --color-line: var(--line);
   --color-line-2: var(--line-2);
-  --color-amber: var(--amber);
-  --color-amber-ink: var(--amber-ink);
-  --color-green: var(--green);
-  --color-green-ink: var(--green-ink);
-  --color-red: var(--red);
-  --color-red-ink: var(--red-ink);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
   --color-on-accent: var(--on-accent);
-  --font-display: var(--font-unbounded), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-anton), "Impact", "Arial Narrow", sans-serif;
+  --font-sans: var(--font-inter-tight), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-jetbrains), ui-monospace, monospace;
-  --font-sans: var(--font-jetbrains), ui-monospace, monospace;
 }
 
 html {
@@ -95,24 +44,44 @@ html {
 body {
   background: var(--bg);
   color: var(--ink);
-  font-family: var(--font-jetbrains), ui-monospace, monospace;
+  font-family: var(--font-inter-tight), ui-sans-serif, system-ui, sans-serif;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 ::selection {
-  background: var(--amber);
+  background: var(--accent);
   color: var(--on-accent);
 }
 
-:focus-visible {
-  outline: 2px solid var(--green);
-  outline-offset: 3px;
-  border-radius: 2px;
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
 }
 
+/* Anton ships one weight. Never fake bold it. */
 .font-display {
-  font-family: var(--font-unbounded), ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-anton), "Impact", "Arial Narrow", sans-serif;
+  font-weight: 400 !important;
+  font-synthesis: none;
+  letter-spacing: 0.005em;
+}
+.font-display:not(.normal-case) {
+  text-transform: uppercase;
+}
+
+/* Small mono labels: kickers, axis, data */
+@layer components {
+  .label {
+    font-family: var(--font-jetbrains), ui-monospace, monospace;
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
 }
 
 .hairline-t {
@@ -122,57 +91,27 @@ body {
   border-bottom: 1px solid var(--line);
 }
 
-/* Radar room grid */
-.radar-grid {
-  background-image:
-    linear-gradient(var(--grid) 1px, transparent 1px),
-    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
-  background-size: 48px 48px;
+/* Link with a sliding underline */
+.link {
+  background-image: linear-gradient(currentColor, currentColor);
+  background-size: 0% 1px;
+  background-position: 0 100%;
+  background-repeat: no-repeat;
+  transition: background-size 240ms ease, color 160ms ease;
+}
+.link:hover,
+.link:focus-visible {
+  background-size: 100% 1px;
 }
 
-/* Slow radar sweep */
-.radar {
-  position: absolute;
-  aspect-ratio: 1;
-  border-radius: 9999px;
-  pointer-events: none;
+/* Arrow that nudges on hover of its parent .group */
+.nudge {
+  display: inline-block;
+  transition: transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
-.radar::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: 9999px;
-  background: conic-gradient(from 0deg, var(--sweep), transparent 16%, transparent 100%);
-  animation: sweep 9s linear infinite;
-}
-.radar::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: 9999px;
-  background:
-    radial-gradient(circle, transparent 0 24.6%, var(--line) 24.8% 25%, transparent 25.2% 49.6%, var(--line) 49.8% 50%, transparent 50.2% 74.6%, var(--line) 74.8% 75%, transparent 75.2% 99.4%, var(--line-2) 99.6% 100%);
-}
-@keyframes sweep {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.blip {
-  position: absolute;
-  width: 6px;
-  height: 6px;
-  border-radius: 9999px;
-  background: var(--amber);
-  box-shadow: 0 0 12px var(--amber);
-  animation: blip 9s ease-out infinite;
-  opacity: 0;
-}
-@keyframes blip {
-  0%, 100% { opacity: 0; }
-  4% { opacity: 1; }
-  40% { opacity: 0.1; }
+.group:hover .nudge,
+.group:focus-visible .nudge {
+  transform: translate(3px, -3px);
 }
 
 /* Flight strip markers slide in */
@@ -206,17 +145,47 @@ body {
 }
 
 .fade-up {
-  animation: fade-up 600ms ease-out both;
+  animation: fade-up 700ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 @keyframes fade-up {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(14px);
   }
   to {
     opacity: 1;
     transform: none;
   }
+}
+
+/* Headline lines rise out of a mask */
+.rise {
+  display: block;
+  overflow: hidden;
+  padding-bottom: 0.04em;
+}
+.rise > span {
+  display: block;
+  animation: rise 900ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes rise {
+  from {
+    transform: translateY(105%);
+  }
+  to {
+    transform: none;
+  }
+}
+
+/* Scroll reveal, toggled by <Reveal> */
+.reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 800ms cubic-bezier(0.2, 0.8, 0.2, 1), transform 800ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.reveal.is-in {
+  opacity: 1;
+  transform: none;
 }
 
 .pulse-dot {
@@ -228,7 +197,7 @@ body {
 }
 
 .scan-bar {
-  background: linear-gradient(90deg, transparent, var(--green), transparent);
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
   background-size: 40% 100%;
   background-repeat: no-repeat;
   animation: scan 1.6s linear infinite;
@@ -238,17 +207,34 @@ body {
   to { background-position: 140% 0; }
 }
 
+/* Dot field texture used in quiet places */
+.dotfield {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.11) 1px, transparent 1.2px);
+  background-size: 14px 14px;
+}
+
+details > summary::-webkit-details-marker {
+  display: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .radar::before,
-  .blip,
   .marker-in,
   .lane-in,
   .fade-up,
+  .rise > span,
   .pulse-dot,
   .scan-bar {
     animation: none !important;
   }
   .marker-in {
     transform: translate(-50%, -50%);
+  }
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .nudge {
+    transition: none;
   }
 }

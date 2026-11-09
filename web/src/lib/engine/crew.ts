@@ -107,9 +107,18 @@ export function score(
   const r = (x: number) => rel(x, ref);
   const q = (n: number) => `${Math.abs(n).toFixed(2)} ${all[0]?.quoteSymbol || "SOL"}${usd ? ` (about $${Math.round(Math.abs(usd)).toLocaleString("en-US")})` : ""}`;
 
-  const amount = (n: number) => (n >= 1e6 ? `${(n / 1e6).toFixed(1)}M` : n >= 1e3 ? `${(n / 1e3).toFixed(1)}K` : n.toFixed(0));
+  const amount = (n: number) => (n >= 1e9 ? `${(n / 1e9).toFixed(1)}B` : n >= 1e6 ? `${(n / 1e6).toFixed(1)}M` : n >= 1e3 ? `${(n / 1e3).toFixed(1)}K` : n >= 1 ? n.toFixed(0) : n.toPrecision(2));
   const soldPart = complete ? `sold ${100 - stillHoldingPct}%` : `sold ${amount(soldTokens)} tokens`;
-  const pnl = complete && net !== 0 ? (net > 0 ? `, ${q(net)} ahead` : `, down ${q(net)}`) : "";
+  // Profit only means something once they're out. While they still hold, say how much.
+  const pnl = !complete
+    ? ""
+    : stillHoldingPct > 5
+      ? `, still holding ${stillHoldingPct}%`
+      : Math.abs(net) < 0.01
+        ? ", about even"
+        : net > 0
+          ? `, ${q(net)} ahead`
+          : `, down ${q(net)}`;
 
   if (!all.length) {
     return {

@@ -23,6 +23,8 @@ const W = {
   d: "5Q544fKrFoe6tsEbD7S8EmxGTJYAKtTVhAW5Q5pge4j1",
   e: "3Kz9v6kFQ2rU4YHmE7FBn1t8kJcVgPZ8xyuW2y2M6s7B",
   f: "Bq5p9iZ2y9n3eJmZ8xH5o3rWtZQJ3cJd1vQe2Yz4mN8K",
+  g: "8hYq3xWm2Lr5TnVb7KpQe4ZsJd6FcGu9AiMo1RtXyBvN",
+  h: "4pLm7NqRs2TvWx5YzAb8CdEf3GhJk6MnPq9RsTuVwXyZ",
 };
 
 const caller: CrewMember[] = [
@@ -39,8 +41,9 @@ const caller: CrewMember[] = [
 const crew: CrewMember[] = [
   {
     wallet: W.b,
-    tier: "funded",
-    evidence: "Funded with 12 SOL by the caller's public wallet 3 days ago.",
+    tier: "behaviour",
+    evidence: "Bought with this caller on 6 of 9 recent tokens, within 20s",
+    repeat: { hits: 6, of: 9 },
     firstBuyOffset: -38,
     trades: [t(W.b, "buy", -38, 6.0, 4), t(W.b, "sell", 121, 10.4, 5)],
   },
@@ -73,6 +76,23 @@ const bots: CrewMember[] = [
   },
 ];
 
+const early: CrewMember[] = [
+  {
+    wallet: W.g,
+    tier: "early",
+    evidence: "Bought 74s before this post",
+    firstBuyOffset: -74,
+    trades: [t(W.g, "buy", -74, 2.4, 12), t(W.g, "sell", 140, 3.9, 13)],
+  },
+  {
+    wallet: W.h,
+    tier: "early",
+    evidence: "Bought 31s before this post",
+    firstBuyOffset: -31,
+    trades: [t(W.h, "buy", -31, 0.9, 14)],
+  },
+];
+
 export const fixtureCard: Card = {
   id: "fixture-sold",
   call: {
@@ -87,6 +107,7 @@ export const fixtureCard: Card = {
   callerWallets: caller,
   crew,
   copyBots: bots,
+  early,
   summary: {
     firstInsiderBuyOffset: -38,
     firstInsiderSellOffset: 121,

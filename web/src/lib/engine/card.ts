@@ -30,7 +30,7 @@ const solana: Adapter = {
     return (await sol.tokenTxsBetween(mint, from, to)).map((t) => sol.tradeOf(t, mint)).filter(Boolean) as Trade[];
   },
   async walletTrades(wallet, mint, from, to) {
-    return (await sol.txsBetween(wallet, from, to, 3))
+    return (await sol.txsBetween(wallet, from, to, 6))
       .filter((t) => t.feePayer === wallet)
       .map((t) => sol.tradeOf(t, mint))
       .filter(Boolean) as Trade[];
@@ -153,8 +153,8 @@ export async function buildCard(raw: string): Promise<Card> {
 
   const known2 = [...callerWalletsOut, ...activeCrew];
   const knownTraded = known2.some((m) => m.trades.length);
-  const insiders = knownTraded ? known2 : early;
-  const scored = score(t0, Boolean(call.postedAt), insiders, windowTrades, quoteUsd, knownTraded ? undefined : `${early.length} wallets that bought in the 3 minutes before this post`);
+  const insiders = knownTraded || !early.length ? known2 : early;
+  const scored = score(t0, Boolean(call.postedAt), insiders, windowTrades, quoteUsd, knownTraded || !early.length ? undefined : `${early.length} wallets that bought in the 3 minutes before this post`);
   return {
     id: cardId(call),
     call: { ...call, postedAt: call.postedAt },

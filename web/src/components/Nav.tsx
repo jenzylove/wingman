@@ -3,10 +3,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Logo from "./Logo";
-import ThemeToggle from "./ThemeToggle";
 import WalletMenu from "./WalletMenu";
 
 const LINKS = [
+  { href: "/check", label: "Check" },
   { href: "/proof", label: "Proof" },
   { href: "/exits", label: "My exits" },
   { href: "/stake", label: "Stake" },
@@ -15,39 +15,44 @@ const LINKS = [
 export default function Nav() {
   const path = usePathname();
   return (
-    <header className="sticky top-0 z-40 bg-[color-mix(in_srgb,var(--bg)_96%,transparent)] hairline-b">
-      <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4 sm:px-6">
+    <header className="sticky top-0 z-40 bg-[color-mix(in_srgb,var(--bg)_88%,transparent)] backdrop-blur-md hairline-b">
+      <div className="mx-auto flex h-14 max-w-7xl items-center gap-3 px-4 sm:px-6 lg:px-10">
         <Link href="/" aria-label="Wingman home" className="shrink-0">
           <Logo />
         </Link>
-        <nav className="ml-2 hidden items-center gap-1 md:flex" aria-label="Main">
-          {LINKS.map((l) => (
-            <Link
-              key={l.href}
-              href={l.href}
-              className={`rounded-full px-3 py-1.5 text-[13px] transition hover:text-ink ${
-                path?.startsWith(l.href) ? "text-ink" : "text-ink-3"
-              }`}
-            >
-              {l.label}
-            </Link>
-          ))}
+        <nav className="ml-6 hidden items-center gap-7 md:flex" aria-label="Main">
+          {LINKS.map((l) => {
+            const on = path?.startsWith(l.href);
+            return (
+              <Link
+                key={l.href}
+                href={l.href}
+                aria-current={on ? "page" : undefined}
+                className={`link py-1 font-mono text-[11px] uppercase tracking-[0.16em] ${on ? "text-ink" : "text-ink-3 hover:text-ink"}`}
+              >
+                {l.label}
+              </Link>
+            );
+          })}
         </nav>
-        <div className="ml-auto flex items-center gap-1 sm:gap-2">
-          <ThemeToggle />
+        <div className="ml-auto flex items-center">
           <WalletMenu compact />
         </div>
       </div>
-      <nav className="flex gap-1 overflow-x-auto px-3 pb-2 md:hidden" aria-label="Main mobile">
-        {LINKS.map((l) => (
-          <Link
-            key={l.href}
-            href={l.href}
-            className={`shrink-0 rounded-full px-3 py-1 text-[12px] ${path?.startsWith(l.href) ? "bg-bg-3 text-ink" : "text-ink-3"}`}
-          >
-            {l.label}
-          </Link>
-        ))}
+      <nav className="flex gap-5 overflow-x-auto px-4 pb-2.5 md:hidden" aria-label="Main mobile">
+        {LINKS.map((l) => {
+          const on = path?.startsWith(l.href);
+          return (
+            <Link
+              key={l.href}
+              href={l.href}
+              aria-current={on ? "page" : undefined}
+              className={`shrink-0 py-1 font-mono text-[11px] uppercase tracking-[0.16em] ${on ? "text-ink underline decoration-accent decoration-2 underline-offset-[6px]" : "text-ink-3"}`}
+            >
+              {l.label}
+            </Link>
+          );
+        })}
       </nav>
     </header>
   );
