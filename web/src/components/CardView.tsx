@@ -13,12 +13,6 @@ import { STANCE_HEADLINE, recheckInput, sellNowUrl, stanceOf } from "@/lib/ui/st
 import TierBadge from "./TierBadge";
 import { addressUrl, chainName, dateTimeUtc, dur, num, quoteSymbol, short, toMs, tokenUrl, usd } from "@/lib/ui/format";
 
-const VERDICT: Record<Card["verdict"], { label: string; cls: string }> = {
-  sold_into_followers: { label: "Sold into followers", cls: "bg-accent text-on-accent border-accent" },
-  exited: { label: "Insiders already out", cls: "text-accent-ink border-accent" },
-  clean: { label: "No insider selling seen", cls: "text-ink border-ink" },
-  unknown: { label: "Not enough data", cls: "text-ink-2 border-line-2" },
-};
 
 function Stat({ label, children, sub, tone = "ink" }: { label: string; children: React.ReactNode; sub?: string; tone?: "ink" | "accent" }) {
   const toneCls = { ink: "text-ink", accent: "text-accent" }[tone];
@@ -108,7 +102,6 @@ export default function CardView({ card: initial, shareable = true }: { card: Ca
   const chain = call.token.chain;
   const sym = quoteSymbol(chain);
   const tokenName = call.token.symbol ? `$${call.token.symbol}` : short(call.token.address);
-  const v = VERDICT[card.verdict];
   const net = summary.insiderNetQuote;
   const early = card.early ?? [];
   const st = useMemo(() => stanceOf(card), [card]);
@@ -226,7 +219,6 @@ export default function CardView({ card: initial, shareable = true }: { card: Ca
     <article className="fade-up">
       {/* header */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2 font-mono text-[12px] text-ink-3">
-        <span className={`inline-flex h-6 items-center border px-2 text-[11px] uppercase tracking-[0.14em] ${v.cls}`}>{v.label}</span>
         <span>{chainName(chain)}</span>
         <span aria-hidden>·</span>
         <a href={tokenUrl(chain, call.token.address)} target="_blank" rel="noreferrer" className="text-ink-2 hover:text-ink">
