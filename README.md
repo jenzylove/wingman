@@ -31,7 +31,7 @@ Full records: [docs/proof](docs/proof). Contracts: [docs/DEPLOYMENTS.md](docs/DE
 * **Repeat:** wallets that bought within 20 seconds of the caller on 3 or more of their recent tokens, or in the very same second on 2 or more. Once a wallet qualifies, Wingman remembers it as that caller's crew.
 * **Early:** wallets that bought in the 3 minutes before the post. Wingman remembers them per caller, and a wallet that shows up early on 2 or more of the same caller's posts becomes crew.
 
-Every card says what it could see, so a thin read is labelled thin.
+Claimed and public wallets are the caller's own. Repeat and early wallets are linked by behaviour, trading alongside the caller, not by proven ownership, and every card labels which is which. Every card also says what it could see, so a thin read is labelled thin.
 
 ## How exits work
 
@@ -39,7 +39,7 @@ Every card says what it could see, so a thin read is labelled thin.
 
 **Solana.** Your buy and a durable nonce go out in one transaction. You then sign the exit sell on that nonce, with a minimum out fixed at arm time. Wingman holds the signed sell and submits it the moment a Helius webhook reports a watched wallet selling. Cancel by closing the nonce, which voids the held sell.
 
-**Trust.** The keeper can only call `fire` on an exit you armed, and only for the amount you approved. The contract owner can change the keeper, the allowed routers and the fee wallet. Nobody can move your tokens anywhere except a sale whose USDC goes to you, and never below your floor. On Solana, Wingman holds a sell you signed and decides when to send it, so you trust it to send on time; it can never change what that sell does.
+**Trust.** The keeper can only call `fire` on an exit you armed, and only for the amount you approved. The contract owner can change the keeper, the allowed routers and the fee wallet. Nobody can move your tokens anywhere except a sale whose USDC goes to you, and never below your floor. On Base the keeper decides that a watched wallet sold; the contract can't check that itself, so you trust the keeper on timing, never on where the money goes. On Solana, Wingman holds a sell you signed and decides when to send it, so you trust it to send on time; it can never change what that sell does. You can cancel any armed exit from My Exits at any time. The contracts are tested (31 Foundry tests plus a mainnet fork test) but have not had a third party audit.
 
 ## Fees and $VIBES
 

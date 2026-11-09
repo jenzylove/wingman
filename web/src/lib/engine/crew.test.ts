@@ -84,3 +84,13 @@ test("same second co buys on two tokens count as crew; two loose ones don't", ()
   assert.deepEqual(crew.map((c) => c.wallet), ["tight"]);
   assert.equal(copyBots.length, 0);
 });
+
+test("USDC routed trades count toward profit, not as zero", () => {
+  const t0 = 1000;
+  const mk = (side: "buy" | "sell", ts: number, usd: number): Trade => ({ wallet: "w", side, ts, tokenAmount: 100, quoteAmount: 0, quoteSymbol: "ETH", usd, tx: side + ts });
+  const m: CrewMember = { wallet: "w", tier: "public", evidence: "", trades: [mk("buy", t0 - 5, 300), mk("sell", t0 + 60, 600)] };
+  const r = score(t0, true, [m], m.trades, 3000);
+  // $300 in, $600 out at $3000 per ETH: 0.1 ETH ahead.
+  assert.ok(Math.abs(r.summary.insiderNetQuote - 0.1) < 1e-9);
+  assert.ok(Math.abs((r.summary.insiderNetUsd ?? 0) - 300) < 1e-6);
+});

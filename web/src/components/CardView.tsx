@@ -362,7 +362,7 @@ export default function CardView({ card: initial, shareable = true }: { card: Ca
       {/* wallets */}
       <section className="mt-16 grid gap-14 lg:grid-cols-2">
         <WalletList title="Caller wallets" help="Wallets the caller claimed, or that are linked to them on the public Kolscan KOL list or a verified Farcaster account." members={card.callerWallets} chain={chain} />
-        <WalletList title="Crew" help="Wallets that keep buying with this caller across recent tokens, or were early on 2 or more of their posts." members={card.crew} chain={chain} />
+        <WalletList title="Crew" help="Wallets that keep trading alongside this caller across recent tokens, or were early on 2 or more of their posts. This is behaviour we can see onchain, not proof of who owns them." members={card.crew} chain={chain} />
       </section>
       {early.length > 0 && (
         <section className="mt-14">

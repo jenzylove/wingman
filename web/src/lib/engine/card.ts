@@ -3,7 +3,7 @@ import type { Call, Card, CrewMember, Trade } from "../types";
 import { kvGet, kvSet } from "../store";
 import { InputError, readInput, type InputHint } from "./input";
 import { callerWallets, kolName } from "./wallets";
-import { qualifies, repeatStats, score, splitCrew, CO_BUY_WINDOW } from "./crew";
+import { qualifies, repeatStats, score, splitCrew, tradeValue, CO_BUY_WINDOW } from "./crew";
 import * as sol from "./sol";
 import * as base from "./base";
 
@@ -137,7 +137,7 @@ export async function buildCard(raw: string, hint?: InputHint): Promise<Card> {
     for (const t of windowTrades) {
       if (t.side !== "buy" || t.ts < t0 - EARLY || t.ts > t0 || knownSet.has(t.wallet)) continue;
       const cur = spent.get(t.wallet) || { first: t.ts, q: 0 };
-      spent.set(t.wallet, { first: Math.min(cur.first, t.ts), q: cur.q + t.quoteAmount });
+      spent.set(t.wallet, { first: Math.min(cur.first, t.ts), q: cur.q + tradeValue(t, quoteUsd) });
     }
     const top = [...spent].sort((x, y) => y[1].q - x[1].q).slice(0, 15);
     const id = cardId(call);

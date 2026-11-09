@@ -101,7 +101,7 @@ export const TIER_INFO: Record<Tier, { label: string; help: string }> = {
   claimed: { label: "Claimed", help: "The caller signed a message from this wallet." },
   public: { label: "Public", help: "Publicly linked to the caller: the Kolscan KOL list or a verified Farcaster address." },
   funded: { label: "Funded", help: "Funded directly by a known caller wallet." },
-  behaviour: { label: "Repeat", help: "Seen buying with this caller again and again: within 20s of their buys on several recent tokens, or right before several of their posts we have checked." },
+  behaviour: { label: "Repeat", help: "Seen buying with this caller again and again: within 20s of their buys on several recent tokens, or right before several of their posts we have checked. Behaviour, not proven ownership." },
   early: { label: "Early", help: "Bought in the 3 minutes before this post. Not tied to the caller yet: early on 2 or more of their posts and it becomes crew." },
 };
 

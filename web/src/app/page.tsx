@@ -266,6 +266,7 @@ export default function Home() {
                 { k: "Base", v: "You approve exactly your position to the Wingman contract. Only Wingman's keeper can call fire, and the USDC always goes to you, never below a floor at 50% of the quote when you armed." },
                 { k: "Solana", v: "You presign the exit sale with a fixed minimum out set when you arm. The keeper holds it and sends it only on a crew sell. It sells to SOL into your own wallet." },
                 { k: "Cancel", v: "Any time. You own the position until the exit fires." },
+                { k: "Trust", v: "Wingman decides when a watched wallet sold and sends your exit, so you trust it on timing. It can never change where the money goes or sell below your limit. Contracts are tested but not yet third party audited." },
                 { k: "Fee", v: "0.5% of the exit. Free for wallets staking 100,000 $VIBES." },
               ].map((r) => (
                 <div key={r.k} className="grid grid-cols-[84px_1fr] gap-4 border-b border-line py-4">

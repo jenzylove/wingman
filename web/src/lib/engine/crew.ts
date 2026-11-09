@@ -64,6 +64,8 @@ const fmtSec = (s: number) => {
 export const rel = (s: number, ref = "the post") => (s < 0 ? `${fmtSec(s)} before ${ref}` : s === 0 ? `at the same moment as ${ref}` : `${fmtSec(s)} after ${ref}`);
 
 // Builds the summary, coverage and verdict for a card from the wallets we attribute.
+export const tradeValue = (t: Trade, quoteUsd?: number) => t.quoteAmount + (t.usd && quoteUsd ? t.usd / quoteUsd : 0);
+
 export function score(
   t0: number,
   hasPostTime: boolean,
@@ -73,6 +75,8 @@ export function score(
   who = "The caller's wallets and crew",
 ): Pick<Card, "summary" | "coverage" | "verdict" | "verdictLine"> {
   const mine = new Set(insiders.map((m) => m.wallet));
+  // A trade's value in the quote coin: the SOL or ETH leg plus any stablecoin leg (USDC routed trades carry 0 quote).
+  const val = (t: Trade) => tradeValue(t, quoteUsd);
   const all = insiders.flatMap((m) => m.trades);
   const buys = all.filter((t) => t.side === "buy");
   const sells = all.filter((t) => t.side === "sell");
@@ -81,15 +85,15 @@ export function score(
   const firstSell = sells.length ? Math.min(...sells.map((t) => t.ts)) - t0 : undefined;
   const bought = buys.reduce((a, t) => a + t.tokenAmount, 0);
   const sold = sells.reduce((a, t) => a + t.tokenAmount, 0);
-  const net = sells.reduce((a, t) => a + t.quoteAmount, 0) - buys.reduce((a, t) => a + t.quoteAmount, 0);
+  const net = sells.reduce((a, t) => a + val(t), 0) - buys.reduce((a, t) => a + val(t), 0);
   const soldTokens = sold;
   // Only talk about "% sold" and profit when the buys behind those sells are in view.
   const complete = bought > 0 && sold <= bought * 1.02;
   const stillHoldingPct = complete ? Math.max(0, Math.min(100, Math.round(((bought - sold) / bought) * 100))) : 0;
 
   const earlyBuys = windowTrades.filter((t) => t.side === "buy" && t.ts <= t0);
-  const earlyVol = earlyBuys.reduce((a, t) => a + t.quoteAmount, 0);
-  const attributed = earlyBuys.filter((t) => mine.has(t.wallet)).reduce((a, t) => a + t.quoteAmount, 0);
+  const earlyVol = earlyBuys.reduce((a, t) => a + val(t), 0);
+  const attributed = earlyBuys.filter((t) => mine.has(t.wallet)).reduce((a, t) => a + val(t), 0);
   const pct = earlyVol > 0 ? Math.round((attributed / earlyVol) * 100) : 0;
   const coverage = {
     earlyVolumeAttributedPct: pct,
