@@ -1,5 +1,17 @@
 # Wingman: PRD
 
+## As built (Nov 9 2026)
+The sections below are the original plan from Nov 8. This is what actually shipped, so read this first.
+
+* **Input:** X post links, public Telegram channel post links, Farcaster casts, a token address with an optional @handle, or a call forwarded to @wingmancheckerbot. A handle alone is not supported.
+* **Wallet sources:** wallets the caller claimed, the Kolscan KOL list, Farcaster verified wallets, repeat co buyers (within 20s on 3+ recent tokens, or the same second on 2+, remembered per caller), and early buyers in the 3 minutes before the post. Not built: Basename and ENS lookups, funding link tracing. Repeat and early wallets are behaviour, not proven ownership.
+* **Card:** leads with the crew's stance (still in, selling, out, none) and offers only the action that fits; a plain timeline; the full trade strip behind a toggle; recheck when older than 10 minutes.
+* **Exits on Base:** the WingmanExit contract (exact approval, USDC floor at 50% of the quote at arm time, keeper only fire, proceeds only to the owner), not a smart wallet session permission.
+* **Exits on Solana:** buy plus a durable nonce in one transaction; the exit sell is signed in advance and held; Wingman submits it when a Helius webhook shows a watched wallet selling in a real swap. Not a token delegate.
+* **One armed exit per wallet and token.**
+* **Not built:** clean caller badge, right of reply flow, the ERC-8004 build agent identity, and the /proof backtest (the proof page lists real exits instead).
+* **Proof:** mainnet self tests with our own wallets on both chains, 4 seconds from crew sell to exit.
+
 ## One liner
 Ride a call, and leave when they leave. Paste any call and Wingman shows what the caller and their crew did. Then you can ride it with an exit armed that sells the moment the crew starts selling.
 
@@ -32,7 +44,7 @@ First ten seconds: "Paste a call." An X post link, a cast, a token address or a 
 7. **$VIBES.** Stakers of 100,000+ $VIBES on Base get armed exits free. Everyone else pays 0.5% of the exit. 30% of exit fees go to a $VIBES staker pool, claimable onchain.
 8. **/proof.** A backtest over recent real calls, each verdict linked to transactions, plus a live list of real armed exits and fills.
 
-Nothing is cut.
+Nothing was cut in the plan; see "As built" at the top for what shipped.
 
 ## Rubric mapping (Vibeathon 02)
 | Criterion | Weight | How it's met |

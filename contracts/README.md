@@ -25,7 +25,7 @@ Stake VIBES, earn USDC from exit fees. `stake`, `unstake` any time, `claim`. Rew
 | USDC | 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913 |
 | VIBES | 0xefFC8815487084a97edfdfF968b56Ea123421Acb |
 | KyberSwap MetaAggregationRouterV2 | 0x6131B5fae19EA4f9D964eAc0408E4408b66337b5 |
-| Uniswap UniversalRouter | 0x6fF5693b99212Da76ad316178A184AB56D299b43 |
+| Uniswap UniversalRouter (not on the deployed allowlist) | 0x6fF5693b99212Da76ad316178A184AB56D299b43 |
 
 ## Run
 

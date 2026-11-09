@@ -1,5 +1,7 @@
 # Wingman: plan
 
+> Original plan from Nov 8. What shipped differs: see "As built" at the top of PRD.md and the build log.
+
 Deadline: Mon Nov 9 2026 22:00 UTC. Locked Sun Nov 8 ~17:00 UTC.
 
 | # | Phase | Done when |
