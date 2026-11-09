@@ -2,7 +2,7 @@
 
 **Ride the call. Leave when they leave.**
 
-Live at **[wingman.jdollar.site](https://wingman.jdollar.site)** on Base and Solana mainnet. Watch the [demo](https://youtu.be/OGQNypU-HnA). Follow [@callwingman](https://x.com/callwingman). Telegram bot: [@wingmancheckerbot](https://t.me/wingmancheckerbot).
+Live at **[wingman.jdollar.site](https://wingman.jdollar.site)** on Base and Solana mainnet. Watch the [demo](https://youtu.be/YKuDZXAE_C4). Follow [@callwingman](https://x.com/callwingman). Telegram bot: [@wingmancheckerbot](https://t.me/wingmancheckerbot).
 
 Someone posts a coin. You buy. Their crew sells into you an hour later and you find out from the chart. Wingman fixes the part you can't see.
 
