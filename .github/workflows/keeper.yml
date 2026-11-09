@@ -6,6 +6,9 @@ on:
 concurrency:
   group: base-keeper
   cancel-in-progress: false
+permissions:
+  actions: write
+  contents: read
 jobs:
   poll:
     runs-on: ubuntu-latest
@@ -16,8 +19,14 @@ jobs:
           URL: ${{ vars.WINGMAN_URL }}
           KEY: ${{ secrets.HOOK_SECRET }}
         run: |
-          end=$((SECONDS + 350 * 60))
+          end=$((SECONDS + 345 * 60))
           while [ $SECONDS -lt $end ]; do
             curl -s -m 50 -H "x-wingman-key: $KEY" "$URL/api/cron/base" | head -c 200; echo
             sleep 4
           done
+      # Scheduled runs are unreliable on GitHub, so each run starts the next one.
+      - name: Start the next run
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run keeper.yml -R ${{ github.repository }}
