@@ -159,11 +159,27 @@ export async function nonceClosed(nonce: string) {
   return (await conn().getAccountInfo(new PublicKey(nonce))) === null;
 }
 
+// Sends the held exit and keeps rebroadcasting until it lands or 45 seconds pass. A single send gets dropped
+// often enough under load that we never trust one.
 export async function submit(signedB64: string) {
   const c = conn();
-  const sig = await c.sendRawTransaction(Buffer.from(signedB64, "base64"), { skipPreflight: true, maxRetries: 5 });
-  const res = await c.confirmTransaction(sig, "confirmed").catch(() => null);
-  return { sig, ok: Boolean(res && !res.value.err), err: res?.value.err };
+  const raw = Buffer.from(signedB64, "base64");
+  const send = () => c.sendRawTransaction(raw, { skipPreflight: true, maxRetries: 0 }).catch(() => null);
+  const sig = (await send()) || (await send());
+  if (!sig) return { sig: "", ok: false, landed: false, err: "send failed" };
+  const until = Date.now() + 45_000;
+  let lastSend = Date.now();
+  while (Date.now() < until) {
+    await new Promise((z) => setTimeout(z, 1500));
+    const st = (await c.getSignatureStatuses([sig]).catch(() => null))?.value?.[0];
+    if (st?.err) return { sig, ok: false, landed: true, err: st.err };
+    if (st && (st.confirmationStatus === "confirmed" || st.confirmationStatus === "finalized")) return { sig, ok: true, landed: true };
+    if (Date.now() - lastSend > 3000) {
+      await send();
+      lastSend = Date.now();
+    }
+  }
+  return { sig, ok: false, landed: false, err: "not landed" };
 }
 
 // SOL that landed in the owner's wallet from a fired exit.

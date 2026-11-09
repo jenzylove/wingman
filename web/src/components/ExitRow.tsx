@@ -72,10 +72,14 @@ export default function ExitRow({ x, showOwner = false, onChange }: { x: ArmedEx
             <p>
               Crew started selling <span className="tabular-nums text-accent">{clock(x.trigger.ts)}</span>
             </p>
-            <p>
-              You were out <span className="tabular-nums text-ink">{clock(x.exit.ts)}</span>
-              {lag !== null && <span className="font-sans text-[14px] normal-case text-ink-3"> · {dur(lag)} later</span>}
-            </p>
+            {x.status === "failed" ? (
+              <p className="text-ink-2">Your exit didn&apos;t fill</p>
+            ) : (
+              <p>
+                You were out <span className="tabular-nums text-ink">{clock(x.exit.ts)}</span>
+                {lag !== null && <span className="font-sans text-[14px] normal-case text-ink-3"> · {dur(lag)} later</span>}
+              </p>
+            )}
           </div>
         ) : (
           <p className="text-[14px] text-ink-2">
@@ -108,7 +112,7 @@ export default function ExitRow({ x, showOwner = false, onChange }: { x: ArmedEx
       </div>
 
       <div className="flex items-center gap-3 md:flex-col md:items-end">
-        {x.exit && (
+        {x.exit && x.status !== "failed" && (
           <p className="font-display text-[32px] leading-none tabular-nums text-ink">
             {x.exit.usdOut !== undefined ? usd(x.exit.usdOut) : `${num(x.exit.quoteOut, 4)} ${quoteSymbol(x.chain)}`}
           </p>

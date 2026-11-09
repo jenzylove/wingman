@@ -28,6 +28,10 @@ export async function kvSet(key: string, value: unknown, ttlSec?: number) {
   if (storeEnabled()) await redis(ttlSec ? ["SET", key, v, "EX", ttlSec] : ["SET", key, v]);
   else mem.set(key, v);
 }
+export async function kvDel(key: string) {
+  if (storeEnabled()) await redis(["DEL", key]);
+  else mem.delete(key);
+}
 async function listPush(key: string, value: string, cap = 500) {
   if (storeEnabled()) {
     await redis(["LPUSH", key, value]);

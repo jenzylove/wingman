@@ -1,6 +1,6 @@
 import { randomBytes, timingSafeEqual } from "crypto";
 import type { ArmedExit } from "../types";
-import { claimOnce, getExit, kvGet, kvSet, saveExit, watchAdd, watchGet, allWatched } from "../store";
+import { claimOnce, getExit, kvDel, kvGet, kvSet, saveExit, watchAdd, watchGet, allWatched } from "../store";
 import * as sx from "./solana";
 import { tradeOf } from "../engine/sol";
 
@@ -122,6 +122,12 @@ export async function onActivity(t: HookTx) {
     if (r.ok) {
       e.status = "fired";
       e.exit = { tx: r.sig, ts: now, quoteOut: (await sx.solReceived(r.sig, e.owner)) ?? 0 };
+    } else if (!r.landed) {
+      // Never reached a block: the signed sell is still valid on its nonce, so stay armed for the next sell.
+      e.trigger = undefined;
+      await saveExit(e);
+      await kvDel(`firing:${id}`);
+      continue;
     } else {
       // The signed sell has a fixed minimum. If the price already fell past it, the sell reverts.
       e.status = "failed";
