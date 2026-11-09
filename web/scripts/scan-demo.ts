@@ -4,7 +4,7 @@ import { recentBuys } from "../src/lib/engine/sol";
 import { buildCard } from "../src/lib/engine/card";
 (async () => {
   const now = Date.now() / 1000;
-  const list = (kols as any).kols.slice(0, Number(process.argv[2] || 30));
+  const list = (kols as any).kols.filter((k: any) => !process.argv[3] || k.handle === process.argv[3]).slice(0, Number(process.argv[2] || 30));
   const cands: { h: string; mint: string; ts: number }[] = [];
   for (let i = 0; i < list.length; i += 5) {
     const got = await Promise.all(list.slice(i, i + 5).map(async (k: any) => (await recentBuys(k.wallets[0]).catch(() => [])).filter((b) => now - b.ts < 14 * 3600).map((b) => ({ h: k.handle, ...b }))));

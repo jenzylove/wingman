@@ -306,7 +306,7 @@ export default function Home() {
             <p className="mt-8 label">See a real card</p>
             <div className="mt-3 flex flex-wrap gap-x-6 gap-y-2 text-[13px]">
               <Link className="link text-ink-2 hover:text-ink" href="/card/1c9027a0b70d95ee">
-                Crew is out: 5 wallets bought with the caller and sold 2 seconds later ↗
+                Crew is out: the caller and their crew bought together and sold within seconds ↗
               </Link>
               <Link className="link text-ink-2 hover:text-ink" href="/card/9b9d2e15556e0ef9">
                 The $Pepetide Telegram call: early buyers and the exit that fired ↗

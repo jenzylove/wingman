@@ -73,16 +73,17 @@ export function tradeOf(t: HTx, mint: string): Trade | null {
       if (x.toUserAccount === s) usd -= x.tokenAmount;
     }
   }
-  // The signer's real SOL change catches pump.fun and AMM proceeds that never show as transfers.
+  // The signer's own WSOL leg is the real price when there is one (already wrapped SOL, or a wrap or unwrap in
+  // the same swap). Otherwise the signer's native SOL change catches pump.fun and AMM proceeds that never show
+  // as transfers.
   const acct = (t.accountData || []).find((a) => a.account === s);
-  if (acct && acct.nativeBalanceChange !== 0) sol += -(acct.nativeBalanceChange + (t.fee || 0)) / 1e9;
-  else {
-    sol += wsol;
+  if (Math.abs(wsol) > 1e-9) sol += wsol;
+  else if (acct && acct.nativeBalanceChange !== 0) sol += -(acct.nativeBalanceChange + (t.fee || 0)) / 1e9;
+  else
     for (const n of t.nativeTransfers || []) {
       if (n.fromUserAccount === s) sol += n.amount / 1e9;
       if (n.toUserAccount === s) sol -= n.amount / 1e9;
     }
-  }
   const net = tokIn - tokOut;
   if (Math.abs(net) < 1e-9) return null;
   const side = net > 0 ? "buy" : "sell";
