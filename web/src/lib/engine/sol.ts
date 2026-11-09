@@ -34,8 +34,17 @@ async function slot<T>(fn: () => Promise<T>): Promise<T> {
   }
 }
 
-// A failed read must never look like "no trades": empty means empty, anything else retries and then throws.
+// Reads that still failed after retries, so a card can disclose a partial read instead of hiding it.
+let readFailures = 0;
+export const takeReadFailures = () => {
+  const n = readFailures;
+  readFailures = 0;
+  return n;
+};
+
+// A failed read must never pass silently as "no trades": it retries, and a final failure is counted and disclosed.
 async function helius(path: string): Promise<HTx[]> {
+  let lastStatus = 0;
   for (let i = 0; i < 6; i++) {
     const r = await slot(() => fetch(`https://api.helius.xyz/v0/${path}${path.includes("?") ? "&" : "?"}api-key=${KEY()}`, { cache: "no-store" })).catch(() => null);
     if (r && r.ok) {
@@ -48,9 +57,13 @@ async function helius(path: string): Promise<HTx[]> {
       if (/search period|no transactions|not found/i.test(text)) return [];
     }
     if (process.env.WM_DEBUG) console.error("helius retry", i, r?.status, path.slice(0, 120));
+    lastStatus = r?.status ?? 0;
     await sleep(600 * (i + 1));
   }
-  throw new ReadError("helius read failed");
+  // Still failing: count it so the card can say part of the read failed, and carry on with what we have.
+  readFailures++;
+  console.error("helius read failed", lastStatus, path.split("?")[0].slice(0, 80));
+  return [];
 }
 
 // All transactions touching an address between two times, newest first, up to maxPages*100.

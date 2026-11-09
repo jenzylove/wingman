@@ -79,7 +79,14 @@ async function learnCrew(a: Adapter, handle: string, wallets: string[], exclude:
   return { stats, tokens: byMint.size, failed };
 }
 
+// When some trade reads failed, the card says so instead of passing a partial read off as complete.
+function partialNote(c: Card["coverage"]): Card["coverage"] {
+  const n = sol.takeReadFailures();
+  return n ? { ...c, note: `${c.note} Part of the trade history couldn't be read just now (${n} reads), so this card may be missing trades. Recheck in a minute.` } : c;
+}
+
 export async function buildCard(raw: string, hint?: InputHint): Promise<Card> {
+  sol.takeReadFailures();
   const call = await readInput(raw, hint);
   const a = adapters[call.token.chain];
   const token = call.token.address;
@@ -208,9 +215,7 @@ export async function buildCard(raw: string, hint?: InputHint): Promise<Card> {
     copyBots: copyBots.filter((c) => c.trades.length),
     early,
     ...scored,
-    coverage: learned?.failed
-      ? { ...scored.coverage, note: `${scored.coverage.note} We couldn't read ${learned.failed} of this caller's ${learned.failed + learned.tokens} recent tokens, so some crew may be missing. Recheck in a minute.` }
-      : scored.coverage,
+    coverage: partialNote(learned?.failed ? { ...scored.coverage, note: `${scored.coverage.note} We couldn't read ${learned.failed} of this caller's ${learned.failed + learned.tokens} recent tokens, so some crew may be missing. Recheck in a minute.` } : scored.coverage),
     computedAt: now,
   };
 }
