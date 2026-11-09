@@ -12,7 +12,7 @@ export default function PasteBox({ initial = "", autoFocus = false, size = "lg" 
     e.preventDefault();
     const q = value.trim();
     if (!q) {
-      setHint("Paste an X post link, a Farcaster cast, or a token address first.");
+      setHint("Paste an X post, a Farcaster cast, a Telegram channel post, or a token address first.");
       return;
     }
     if (/^@?[A-Za-z0-9_]{1,15}$/.test(q)) {
@@ -44,7 +44,7 @@ export default function PasteBox({ initial = "", autoFocus = false, size = "lg" 
           &gt;
         </span>
         <label htmlFor="call-input" className="sr-only">
-          X post link, Farcaster cast, or token address with an optional @handle
+          X post, Farcaster cast, Telegram channel post, or token address with an optional @handle
         </label>
         <input
           id="call-input"
@@ -56,7 +56,7 @@ export default function PasteBox({ initial = "", autoFocus = false, size = "lg" 
           autoFocus={autoFocus}
           autoComplete="off"
           spellCheck={false}
-          placeholder="Paste a post or token"
+          placeholder="X, t.me, cast or token"
           className={`min-w-0 flex-1 bg-transparent font-mono text-ink placeholder:text-ink-3 focus:outline-none ${big ? "h-12 text-[14px] sm:text-[15px]" : "h-10 text-[13px]"}`}
         />
         {!value && (

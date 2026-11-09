@@ -66,7 +66,11 @@ export default function CheckRunner({ q }: { q: string }) {
         <p className="label text-accent-ink">Check</p>
         <h1 className="mt-4 font-display text-[64px] leading-[0.88] sm:text-[104px]">Check a call</h1>
         <p className="mt-5 max-w-xl text-[16px] leading-relaxed text-ink-2">
-          Paste an X post link, a Farcaster cast, or a token address. Add the caller&apos;s @handle next to a token address to check that caller.
+          Paste an X post link, a Farcaster cast, a public Telegram channel post, or a token address. Add the caller&apos;s @handle next to a token address to check that caller. Or forward the call to{" "}
+          <a href="https://t.me/wingmancheckerbot" target="_blank" rel="noreferrer" className="link text-ink">
+            @wingmancheckerbot
+          </a>{" "}
+          on Telegram.
         </p>
         <div className="mt-10">
           <PasteBox autoFocus />

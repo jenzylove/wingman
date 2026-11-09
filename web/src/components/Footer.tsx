@@ -9,6 +9,7 @@ const COLS = [
       { href: "/exits", label: "My exits" },
       { href: "/stake", label: "Stake $VIBES" },
       { href: "/proof", label: "Proof" },
+      { href: "https://t.me/wingmancheckerbot", label: "Telegram bot" },
     ],
   },
   {
@@ -37,9 +38,15 @@ export default function Footer() {
             <ul className="mt-5 space-y-3 text-[14px]">
               {c.links.map((l) => (
                 <li key={l.href}>
-                  <Link className="link text-ink-2 hover:text-ink" href={l.href}>
-                    {l.label}
-                  </Link>
+                  {l.href.startsWith("http") ? (
+                    <a className="link text-ink-2 hover:text-ink" href={l.href} target="_blank" rel="noreferrer">
+                      {l.label} ↗
+                    </a>
+                  ) : (
+                    <Link className="link text-ink-2 hover:text-ink" href={l.href}>
+                      {l.label}
+                    </Link>
+                  )}
                 </li>
               ))}
             </ul>

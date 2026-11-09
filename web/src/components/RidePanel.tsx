@@ -18,7 +18,17 @@ const GROUP_TITLE = {
   "Copy bot": "Copy bots: off by default",
 } as const;
 
-export default function RidePanel({ card, open, onClose }: { card: Card; open: boolean; onClose: () => void }) {
+export interface RideOptions {
+  mode: "ride" | "hold";
+  /** Wallets to watch by default. Falls back to caller, crew and early buyers. */
+  watch?: string[];
+  /** A red line shown above the form, e.g. when part of the crew already sold. */
+  warning?: string;
+  /** Shown under the title, e.g. the stance from a fresh recheck. */
+  status?: string;
+}
+
+export default function RidePanel({ card, open, onClose, options }: { card: Card; open: boolean; onClose: () => void; options?: RideOptions }) {
   const ref = useRef<HTMLDialogElement>(null);
   const chain = card.call.token.chain;
   const sym = quoteSymbol(chain);
@@ -34,9 +44,11 @@ export default function RidePanel({ card, open, onClose }: { card: Card; open: b
     ],
     [card],
   );
-  const [watch, setWatch] = useState<Set<string>>(
-    () => new Set([...card.callerWallets, ...card.crew, ...(card.early ?? [])].map((m) => m.wallet)),
+  const defaultWatch = useMemo(
+    () => options?.watch ?? [...card.callerWallets, ...card.crew, ...(card.early ?? [])].map((m) => m.wallet),
+    [card, options?.watch],
   );
+  const [watch, setWatch] = useState<Set<string>>(() => new Set(defaultWatch));
   const [spend, setSpend] = useState("");
   const [slip, setSlip] = useState(300);
   const [busy, setBusy] = useState(false);
@@ -58,6 +70,16 @@ export default function RidePanel({ card, open, onClose }: { card: Card; open: b
     if (open && !d.open) d.showModal();
     if (!open && d.open) d.close();
   }, [open]);
+
+  // every time the panel opens, start from what the card asked for
+  useEffect(() => {
+    if (!open || busy) return;
+    setMode(options?.mode ?? "ride");
+    setWatch(new Set(defaultWatch));
+    setError(null);
+    setArmed(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, options, defaultWatch]);
 
   const spendNum = Number(spend);
   const spendValid = spend.trim() !== "" && Number.isFinite(spendNum) && spendNum > 0;
@@ -142,6 +164,7 @@ export default function RidePanel({ card, open, onClose }: { card: Card; open: b
             <p className="mt-2 text-[13px] text-ink-3">
               {chainName(chain)} · we sell for you the moment a watched wallet sells.
             </p>
+            {options?.status && <p className="mt-2 font-mono text-[11px] uppercase tracking-[0.14em] text-ink">{options.status}</p>}
           </div>
           <button type="button" onClick={onClose} aria-label="Close" className="grid h-10 w-10 shrink-0 place-items-center border border-line-2 text-ink-2 transition-colors hover:border-ink hover:text-ink">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
@@ -164,6 +187,16 @@ export default function RidePanel({ card, open, onClose }: { card: Card; open: b
             </div>
           ) : (
             <>
+              {options?.warning && mode === "ride" && (
+                <p role="alert" className="border-l-2 border-accent pl-3 text-[14px] leading-relaxed text-accent-ink">
+                  {options.warning}
+                </p>
+              )}
+              <p className="text-[13px] leading-relaxed text-ink-2">
+                {mode === "ride"
+                  ? "The buy happens right here, from your own wallet. One wallet popup to buy, then you sign the exit. No redirect, no deposit."
+                  : "Nothing is bought. You sign the exit on tokens already in your wallet."}
+              </p>
               <div className="grid grid-cols-2 border border-line-2" role="tablist" aria-label="Ride mode">
                 {(
                   [

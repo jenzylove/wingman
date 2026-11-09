@@ -164,3 +164,35 @@ export const fixtureExits: ArmedExit[] = [
     armedAt: POST + 400,
   },
 ];
+
+// Stance fixtures for /dev/preview. Checked two minutes before the page renders, so Ride opens without a recheck.
+const CHECKED = Math.floor(Date.now() / 1000) - 120;
+const buysOnly = (ms: CrewMember[]) => ms.map((m) => ({ ...m, trades: m.trades.filter((x) => x.side === "buy") }));
+
+export const fixtureSelling: Card = { ...fixtureCard, id: "fixture-selling", computedAt: CHECKED };
+
+export const fixtureIn: Card = {
+  ...fixtureCard,
+  id: "fixture-in",
+  callerWallets: buysOnly(caller),
+  crew: buysOnly(crew),
+  early: buysOnly(early),
+  copyBots: buysOnly(bots),
+  summary: { firstInsiderBuyOffset: -38, insidersSold: false, insiderNetQuote: -18.3, insiderNetUsd: -2928, stillHoldingPct: 100 },
+  verdict: "clean",
+  verdictLine: "The caller's crew bought 38s before the post and has not sold yet.",
+  computedAt: CHECKED,
+};
+
+export const fixtureOut: Card = {
+  ...fixtureCard,
+  id: "fixture-out",
+  crew: crew.map((m) => (m.wallet === W.d ? { ...m, trades: [...m.trades, t(W.d, "sell", 205, 3.3, 15)] } : m)),
+  early: early.map((m) => (m.wallet === W.h ? { ...m, trades: [...m.trades, t(W.h, "sell", 260, 1.4, 16)] } : m)),
+  summary: { firstInsiderBuyOffset: -38, firstInsiderSellOffset: 121, insidersSold: true, insiderNetQuote: 21.9, insiderNetUsd: 3504, stillHoldingPct: 0 },
+  verdict: "exited",
+  verdictLine: "The caller's crew bought 38s before the post and was fully out 3m 25s after it.",
+  computedAt: CHECKED,
+};
+
+export const fixtureNone: Card = { ...fixtureEmptyCard, id: "fixture-none", computedAt: CHECKED };

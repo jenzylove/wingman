@@ -95,7 +95,11 @@ const SOURCES = [
 const FAQ = [
   {
     q: "What can I paste?",
-    a: "A link to a post on X, a Farcaster cast, or a token address on Solana or Base. Add the caller's @handle next to a token address to check that caller. A handle on its own is not enough: we need a post or a token to line the trades up against.",
+    a: "A link to a post on X, a Farcaster cast, a public Telegram channel post (t.me/channel/123), or a token address on Solana or Base. Add the caller's @handle next to a token address to check that caller. A handle on its own is not enough: we need a post or a token to line the trades up against.",
+  },
+  {
+    q: "Can I check calls from Telegram?",
+    a: "Yes. Forward any call to @wingmancheckerbot on Telegram and it replies with what the crew is doing (still in, selling, or out) and a link to the full card. You can also paste a public channel post link here.",
   },
   {
     q: "How do you know a wallet belongs to a caller?",
@@ -124,7 +128,7 @@ const FAQ = [
 ];
 
 const STEPS = [
-  { t: "Paste a call", d: "Post, cast, or token", g: "↗" },
+  { t: "Paste a call", d: "X, Farcaster, Telegram, or a token", g: "↗" },
   { t: "See the crew", d: "Who bought before the post", g: "→" },
   { t: "Ride with an exit", d: "Out when they sell", g: "↘" },
 ];
@@ -167,10 +171,15 @@ export default function Home() {
                 <PasteBox />
               </div>
               <p className="fade-up mt-6 max-w-xl text-[13px] leading-relaxed text-ink-3" style={{ animationDelay: "420ms" }}>
-                Onchain research, Nov 5 2026: one caller&apos;s wallets bought before 61% of his calls, about 20 seconds ahead.{" "}
-                <a href={RESEARCH} target="_blank" rel="noreferrer" className="link text-ink-2 hover:text-ink">
-                  Read it
+                <a href="https://t.me/wingmancheckerbot" target="_blank" rel="noreferrer" className="group inline-flex items-center gap-2 text-ink">
+                  <span className="link">Or forward any call to @wingmancheckerbot on Telegram</span> <span className="nudge" aria-hidden>↗</span>
                 </a>
+                <span className="mt-3 block">
+                  Onchain research, Nov 5 2026: one caller&apos;s wallets bought before 61% of his calls, about 20 seconds ahead.{" "}
+                  <a href={RESEARCH} target="_blank" rel="noreferrer" className="link text-ink-2 hover:text-ink">
+                    Read it
+                  </a>
+                </span>
               </p>
             </div>
             <ol className="fade-up hidden lg:block" style={{ animationDelay: "500ms" }} aria-label="How it works">
@@ -218,7 +227,7 @@ export default function Home() {
       <Section n="02" id="how" kicker="How Wingman works" title="Paste a call. See the crew. Ride or pass.">
         <ol className="grid gap-12 md:grid-cols-3 md:gap-8">
           {[
-            { n: "1", t: "Paste", d: "An X post, a Farcaster cast, or a token address with the caller's @handle. We pin the post time to the second." },
+            { n: "1", t: "Paste", d: "An X post, a Farcaster cast, a Telegram channel post, or a token address with the caller's @handle. Or forward the call to our Telegram bot. We pin the post time to the second." },
             { n: "2", t: "See who bought first", d: "Caller wallets, crew and early buyers land on a flight strip around the post. Every trade links to the explorer, with how much of the early buying we can explain." },
             { n: "3", t: "Ride with an exit", d: "Buy with an exit armed on the wallets you pick. When any of them sells, you sell, and you get a receipt." },
           ].map((s, i) => (
