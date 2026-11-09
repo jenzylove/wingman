@@ -87,14 +87,19 @@ export function tradeOf(t: HTx, mint: string): Trade | null {
   const net = tokIn - tokOut;
   if (Math.abs(net) < 1e-9) return null;
   const side = net > 0 ? "buy" : "sell";
+  // A buy must pay SOL or a stablecoin and a sell must receive one. Legs moving the wrong way (bots that only
+  // collect, internal shuffles) don't count, so the same money is never added twice.
+  const solLeg = side === "buy" ? sol : -sol;
+  const usdLeg = side === "buy" ? usd : -usd;
+  if (solLeg <= 1e-9 && usdLeg <= 1e-6) return null;
   return {
     wallet: s,
     side,
     ts: t.timestamp,
     tokenAmount: Math.abs(net),
-    quoteAmount: Math.abs(sol),
+    quoteAmount: Math.max(0, solLeg),
     quoteSymbol: "SOL",
-    usd: usd ? Math.abs(usd) : undefined,
+    usd: usdLeg > 1e-6 ? usdLeg : undefined,
     tx: t.signature,
   };
 }

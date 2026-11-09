@@ -14,11 +14,10 @@ This is documented: on Nov 5 2026, [Bubblemaps](https://blog.bubblemaps.io/bubbl
 
 ## Proof on mainnet
 
-Exits fire four seconds after a watched wallet sells. The first row is a live one: a real early wallet on a Telegram call sold, and our ride's exit landed four seconds later.
+Exits fire four seconds after a watched wallet sells. These were run with our own wallets playing crew and rider, so every step is a real mainnet transaction.
 
 | Chain | Crew sell | Wingman exit |
 |---|---|---|
-| Solana (live) | [4uADvAA2…](https://solscan.io/tx/4uADvAA2bhaAPRmyvzQKisrzhbHQhgbkvc71tZaSJwU8MkHzq1k673gbSaiwCwsomYQ2oREGFQ3e77Cumwuq2Z2g) | [37aeizy3…](https://solscan.io/tx/37aeizy3zK2sooQycNjmkVU4BzXbFjEysKGWyoUQkBzUg8as7wdwg96tubLjvnetj6Wr1EQ22Y2ue8HBiFvgceHk) |
 | Base | [0x6e7c45d7…](https://basescan.org/tx/0x6e7c45d7c740316a49dc72378da58776889546f5565e1907acd441f1ed6f3451) | [0x192ee870…](https://basescan.org/tx/0x192ee870ee0aff8530e4c559a7b1491c80ba09ab914c2f4818a1b1678b6f98ab) |
 | Solana | [2B895t7W…](https://solscan.io/tx/2B895t7WRjubh58fmoTnXzJckTZuiajBCbXKw6Z4NXRNxWv9FWaxXfGLqKZu9GXt8WWXk2JkHTCRoYkayxMxneEf) | [24b66AKb…](https://solscan.io/tx/24b66AKbtPdgr1BsAftWaURG3M8vc6nWYaxP85JDjqt7HyUJXwrz32MQuFmDyBbd3WkyYpVFxFSQMFhmVRYtMznc) |
 

@@ -38,7 +38,7 @@ export default async function Image() {
           <span style={{ color: ACCENT }}>Leave when they leave.</span>
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "Mono", fontSize: 24, color: "#b4b4b4" }}>
-          <span>Crew sold 13:49:35 · you were out 13:49:39</span>
+          <span>See the crew. Exit when they sell.</span>
           <span>wingman.jdollar.site</span>
         </div>
       </div>
