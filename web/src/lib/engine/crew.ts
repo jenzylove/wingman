@@ -40,11 +40,16 @@ export const median = (xs: number[]) => {
 };
 
 // Crew buys with or before the caller; copy bots buy right after, every time.
+// Repeat co buyers count when they show up often, or when they bought in the very same second as the caller
+// on two or more other tokens, which chance and copy bots don't do.
+export const qualifies = (stat: RepeatStat, minHits = 3, minRatio = 0.3) =>
+  (stat.hits >= minHits && stat.hits / Math.max(1, stat.of) >= minRatio) || (stat.hits >= 2 && stat.offsets.every((o) => Math.abs(o) <= 1));
+
 export function splitCrew(stats: Map<string, RepeatStat>, minHits = 3, minRatio = 0.3) {
   const crew: { wallet: string; stat: RepeatStat }[] = [];
   const copyBots: { wallet: string; stat: RepeatStat }[] = [];
   for (const [wallet, stat] of stats) {
-    if (stat.hits < minHits || stat.hits / Math.max(1, stat.of) < minRatio) continue;
+    if (!qualifies(stat, minHits, minRatio)) continue;
     (median(stat.offsets) <= 1 ? crew : copyBots).push({ wallet, stat });
   }
   const byHits = (a: { stat: RepeatStat }, b: { stat: RepeatStat }) => b.stat.hits - a.stat.hits;

@@ -74,3 +74,13 @@ test("without a post the reference is the caller's first buy", () => {
   const r = score(t0, false, [c], [tr("c", "buy", t0)]);
   assert.match(r.verdictLine, /caller's first buy/);
 });
+
+test("same second co buys on two tokens count as crew; two loose ones don't", () => {
+  const s = new Map([
+    ["tight", { hits: 2, of: 16, offsets: [0, 1] }],
+    ["loose", { hits: 2, of: 16, offsets: [0, 9] }],
+  ]);
+  const { crew, copyBots } = splitCrew(s);
+  assert.deepEqual(crew.map((c) => c.wallet), ["tight"]);
+  assert.equal(copyBots.length, 0);
+});

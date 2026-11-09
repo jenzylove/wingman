@@ -3,7 +3,7 @@ import type { Call, Card, CrewMember, Trade } from "../types";
 import { kvGet, kvSet } from "../store";
 import { InputError, readInput } from "./input";
 import { callerWallets, kolName } from "./wallets";
-import { repeatStats, score, splitCrew, CO_BUY_WINDOW } from "./crew";
+import { qualifies, repeatStats, score, splitCrew, CO_BUY_WINDOW } from "./crew";
 import * as sol from "./sol";
 import * as base from "./base";
 
@@ -35,7 +35,7 @@ const solana: Adapter = {
       .map((t) => sol.tradeOf(t, mint))
       .filter(Boolean) as Trade[];
   },
-  recentBuys: (w, ex) => sol.recentBuys(w, ex, 10),
+  recentBuys: (w, ex) => sol.recentBuys(w, ex, 16),
   quoteUsd: sol.solUsd,
   meta: sol.tokenMeta,
 };
@@ -50,7 +50,7 @@ async function learnCrew(a: Adapter, handle: string, wallets: string[], exclude:
   const firstBy = new Map<string, number>();
   for (const b of (await Promise.all(wallets.slice(0, 3).map((w) => a.recentBuys(w, exclude)))).flat())
     firstBy.set(b.mint, Math.min(b.ts, firstBy.get(b.mint) ?? Infinity));
-  const buys = [...firstBy].map(([mint, ts]) => ({ mint, ts })).slice(0, 10);
+  const buys = [...firstBy].map(([mint, ts]) => ({ mint, ts })).slice(0, 16);
   const byMint = new Map<string, Trade[]>();
   await Promise.all(
     buys.map(async (b) => {
@@ -66,7 +66,7 @@ async function learnCrew(a: Adapter, handle: string, wallets: string[], exclude:
     const prev = mem.get(w);
     if (!prev || st.hits / Math.max(1, st.of) >= prev.hits / Math.max(1, prev.of)) mem.set(w, st);
   }
-  const keep = [...mem].filter(([w, st]) => fresh.has(w) || (st.hits >= 3 && st.hits / Math.max(1, st.of) >= 0.3)).slice(-300);
+  const keep = [...mem].filter(([w, st]) => fresh.has(w) || qualifies(st)).slice(-300);
   await kvSet(memKey, keep);
   const stats = new Map(keep);
   await kvSet(key, { stats: [...stats], tokens: byMint.size }, 3600);
@@ -117,7 +117,7 @@ export async function buildCard(raw: string): Promise<Card> {
         out.push({
           wallet,
           tier: "behaviour",
-          evidence: `Bought ${kind} this caller on ${stat.hits} of ${stat.of} recent tokens, within ${CO_BUY_WINDOW}s`,
+          evidence: stat.offsets.every((o) => Math.abs(o) <= 1) ? `Bought in the same second as this caller on ${stat.hits} of ${stat.of} recent tokens` : `Bought ${kind} this caller on ${stat.hits} of ${stat.of} recent tokens, within ${CO_BUY_WINDOW}s`,
           repeat: { hits: stat.hits, of: stat.of },
           firstBuyOffset: trades.find((t) => t.side === "buy") ? trades.find((t) => t.side === "buy")!.ts - t0 : undefined,
           trades,

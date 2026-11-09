@@ -100,7 +100,7 @@ export function tradeOf(t: HTx, mint: string): Trade | null {
 
 // Distinct tokens this wallet bought recently (excluding one), with first buy time.
 export async function recentBuys(wallet: string, exclude?: string, max = 10) {
-  const txs = await recentTxs(wallet, 3);
+  const txs = await recentTxs(wallet, 5);
   const buys: { mint: string; ts: number }[] = [];
   for (const t of txs) {
     if (t.feePayer !== wallet) continue;

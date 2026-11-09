@@ -25,7 +25,7 @@ Full records: [docs/proof](docs/proof). Contracts: [docs/DEPLOYMENTS.md](docs/DE
 
 * **Claimed:** wallets the caller linked to their handle.
 * **Public:** the Kolscan KOL list and Farcaster verified wallets.
-* **Repeat:** wallets that bought within 20 seconds of the caller on 3 or more of their recent tokens.
+* **Repeat:** wallets that bought within 20 seconds of the caller on 3 or more of their recent tokens, or in the very same second on 2 or more. Once a wallet qualifies, Wingman remembers it as that caller's crew.
 * **Early:** wallets that bought in the 3 minutes before the post. Wingman remembers them per caller, and a wallet that shows up early on 2 or more of the same caller's posts becomes crew.
 
 Every card says what it could see, so a thin read is labelled thin.
