@@ -278,30 +278,44 @@ export default function Home() {
 
           <Reveal delay={120} className="relative">
             <div className="dotfield absolute inset-0 -z-10 [mask-image:linear-gradient(to_bottom,black,transparent)] opacity-60" aria-hidden />
-            <p className="label">Real receipt · Base mainnet · our own test wallets</p>
+            <p className="label">Real receipt · Solana mainnet · Nov 9 2026 · a live call</p>
             <div className="mt-6 border-t border-line-2">
               <div className="flex items-end justify-between gap-4 border-b border-line py-5">
-                <span className="text-[14px] text-ink-2">Crew started selling</span>
-                <span className="font-display text-[44px] leading-none tabular-nums text-accent sm:text-[64px]">21:24:37</span>
+                <span className="text-[14px] text-ink-2">An early wallet on the call sold</span>
+                <span className="font-display text-[44px] leading-none tabular-nums text-accent sm:text-[64px]">13:49:35</span>
               </div>
               <div className="flex items-end justify-between gap-4 border-b border-line py-5">
-                <span className="text-[14px] text-ink-2">You were out</span>
-                <span className="font-display text-[44px] leading-none tabular-nums text-ink sm:text-[64px]">21:24:41</span>
+                <span className="text-[14px] text-ink-2">Our rider was out</span>
+                <span className="font-display text-[44px] leading-none tabular-nums text-ink sm:text-[64px]">13:49:39</span>
               </div>
             </div>
-            <p className="mt-6 font-display text-[30px] leading-none sm:text-[36px]">4 seconds later, paid in USDC.</p>
+            <p className="mt-6 font-display text-[30px] leading-none sm:text-[36px]">4 seconds later, sold back to SOL.</p>
+            <p className="mt-3 text-[13px] text-ink-2">Not a staged test: a wallet we don&apos;t control sold the $Pepetide call, and the exit we armed on it fired by itself.</p>
             <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-[13px]">
-              <a className="link text-ink-2 hover:text-ink" href="https://basescan.org/tx/0x6e7c45d7c740316a49dc72378da58776889546f5565e1907acd441f1ed6f3451" target="_blank" rel="noreferrer">
-                Crew sell tx ↗
+              <a className="link text-ink-2 hover:text-ink" href="https://solscan.io/tx/4uADvAA2bhaAPRmyvzQKisrzhbHQhgbkvc71tZaSJwU8MkHzq1k673gbSaiwCwsomYQ2oREGFQ3e77Cumwuq2Z2g" target="_blank" rel="noreferrer">
+                Their sell tx ↗
               </a>
-              <a className="link text-ink-2 hover:text-ink" href="https://basescan.org/tx/0x192ee870ee0aff8530e4c559a7b1491c80ba09ab914c2f4818a1b1678b6f98ab" target="_blank" rel="noreferrer">
+              <a className="link text-ink-2 hover:text-ink" href="https://solscan.io/tx/37aeizy3zK2sooQycNjmkVU4BzXbFjEysKGWyoUQkBzUg8as7wdwg96tubLjvnetj6Wr1EQ22Y2ue8HBiFvgceHk" target="_blank" rel="noreferrer">
                 Wingman exit tx ↗
               </a>
-              <a className="link text-ink-2 hover:text-ink" href="https://solscan.io/tx/24b66AKbtPdgr1BsAftWaURG3M8vc6nWYaxP85JDjqt7HyUJXwrz32MQuFmDyBbd3WkyYpVFxFSQMFhmVRYtMznc" target="_blank" rel="noreferrer">
-                Same on Solana, also 4 seconds ↗
+              <a className="link text-ink-2 hover:text-ink" href="/proof">
+                Every fill ↗
               </a>
             </div>
-            <p className="mt-6 text-[12px] text-ink-3">We ran these with our own wallets playing crew and rider. Every receipt links both transactions.</p>
+            <p className="mt-8 label">See a real card</p>
+            <div className="mt-3 flex flex-wrap gap-x-6 gap-y-2 text-[13px]">
+              <a className="link text-ink-2 hover:text-ink" href="/card/1c9027a0b70d95ee">
+                Crew is out: 5 wallets bought with the caller and sold 2 seconds later ↗
+              </a>
+              <a className="link text-ink-2 hover:text-ink" href="/card/9b9d2e15556e0ef9">
+                The $Pepetide Telegram call: early buyers and the exit that fired ↗
+              </a>
+            </div>
+            <p className="mt-6 text-[12px] text-ink-3">
+              Base, with our own test wallets playing crew and rider: crew sold 21:24:37, the WingmanExit keeper fired 21:24:41, paid in USDC.{" "}
+              <a className="link hover:text-ink" href="https://basescan.org/tx/0x6e7c45d7c740316a49dc72378da58776889546f5565e1907acd441f1ed6f3451" target="_blank" rel="noreferrer">crew sell</a>{" · "}
+              <a className="link hover:text-ink" href="https://basescan.org/tx/0x192ee870ee0aff8530e4c559a7b1491c80ba09ab914c2f4818a1b1678b6f98ab" target="_blank" rel="noreferrer">exit</a>
+            </p>
           </Reveal>
         </div>
       </Section>
