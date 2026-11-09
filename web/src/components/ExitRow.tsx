@@ -18,7 +18,7 @@ export function receiptText(x: ArmedExit): string | null {
   if (!x.trigger || !x.exit) return null;
   const lag = (toMs(x.exit.ts) - toMs(x.trigger.ts)) / 1000;
   const out = x.exit.usdOut !== undefined ? usd(x.exit.usdOut) : `${num(x.exit.quoteOut, 4)} ${quoteSymbol(x.chain)}`;
-  return `Crew started selling ${clock(x.trigger.ts)}. I was out ${clock(x.exit.ts)}, ${dur(lag)} later, with ${out}.`;
+  return `${x.trigger.kind === "moved" ? "A watched wallet moved its tokens" : "Crew started selling"} ${clock(x.trigger.ts)}. I was out ${clock(x.exit.ts)}, ${dur(lag)} later, with ${out}.`;
 }
 
 export default function ExitRow({ x, showOwner = false, onChange }: { x: ArmedExit; showOwner?: boolean; onChange?: () => void }) {
@@ -70,7 +70,7 @@ export default function ExitRow({ x, showOwner = false, onChange }: { x: ArmedEx
         {receipt && x.trigger && x.exit ? (
           <div className="font-display text-[22px] leading-[1.05] text-ink sm:text-[26px]">
             <p>
-              Crew started selling <span className="tabular-nums text-accent">{clock(x.trigger.ts)}</span>
+              {x.trigger.kind === "moved" ? "Watched wallet moved its tokens" : "Crew started selling"} <span className="tabular-nums text-accent">{clock(x.trigger.ts)}</span>
             </p>
             {x.status === "failed" ? (
               <p className="text-ink-2">Your exit didn&apos;t fill</p>

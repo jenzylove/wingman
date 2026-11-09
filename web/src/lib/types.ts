@@ -76,7 +76,7 @@ export interface ArmedExit {
   status: "pending" | "armed" | "fired" | "cancelled" | "failed";
   armedAt: number;
   armTx?: string;
-  trigger?: { wallet: string; tx: string; ts: number };
+  trigger?: { wallet: string; tx: string; ts: number; kind?: "sell" | "moved" };
   exit?: { tx: string; ts: number; quoteOut: number; usdOut?: number };
   selfTest?: boolean; // run with our own wallets as crew and rider
 }
