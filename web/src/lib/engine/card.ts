@@ -46,15 +46,21 @@ const adapters = { solana, base: base.adapter as Adapter };
 async function learnCrew(a: Adapter, handle: string, wallets: string[], exclude: string) {
   const key = `crew:${handle}:${wallets.join(",").slice(0, 120)}`;
   const cached = await kvGet<{ stats: [string, { hits: number; of: number; offsets: number[] }][]; tokens: number }>(key);
-  if (cached) return { stats: new Map(cached.stats), tokens: cached.tokens };
+  if (cached) return { stats: new Map(cached.stats), tokens: cached.tokens, failed: 0 };
   const firstBy = new Map<string, number>();
   for (const b of (await Promise.all(wallets.slice(0, 3).map((w) => a.recentBuys(w, exclude)))).flat())
     firstBy.set(b.mint, Math.min(b.ts, firstBy.get(b.mint) ?? Infinity));
   const buys = [...firstBy].map(([mint, ts]) => ({ mint, ts })).slice(0, 16);
   const byMint = new Map<string, Trade[]>();
+  // A failed read is not "nobody bought with the caller": count it, and say so on the card.
+  let failed = 0;
   await Promise.all(
     buys.map(async (b) => {
-      byMint.set(b.mint, await a.windowTrades(b.mint, b.ts - CO_BUY_WINDOW, b.ts + CO_BUY_WINDOW, { slices: 2, pages: 1 }).catch(() => []));
+      try {
+        byMint.set(b.mint, await a.windowTrades(b.mint, b.ts - CO_BUY_WINDOW, b.ts + CO_BUY_WINDOW, { pages: 1 }));
+      } catch {
+        failed++;
+      }
     }),
   );
   const fresh = repeatStats(buys, byMint, new Set(wallets));
@@ -69,8 +75,8 @@ async function learnCrew(a: Adapter, handle: string, wallets: string[], exclude:
   const keep = [...mem].filter(([w, st]) => fresh.has(w) || qualifies(st)).slice(-300);
   await kvSet(memKey, keep);
   const stats = new Map(keep);
-  await kvSet(key, { stats: [...stats], tokens: byMint.size }, 3600);
-  return { stats, tokens: byMint.size };
+  if (!failed) await kvSet(key, { stats: [...stats], tokens: byMint.size }, 3600); // a partial read is never cached
+  return { stats, tokens: byMint.size, failed };
 }
 
 export async function buildCard(raw: string, hint?: InputHint): Promise<Card> {
@@ -202,6 +208,9 @@ export async function buildCard(raw: string, hint?: InputHint): Promise<Card> {
     copyBots: copyBots.filter((c) => c.trades.length),
     early,
     ...scored,
+    coverage: learned?.failed
+      ? { ...scored.coverage, note: `${scored.coverage.note} We couldn't read ${learned.failed} of this caller's ${learned.failed + learned.tokens} recent tokens, so some crew may be missing. Recheck in a minute.` }
+      : scored.coverage,
     computedAt: now,
   };
 }

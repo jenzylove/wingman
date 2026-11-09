@@ -6,6 +6,7 @@ import { base } from "viem/chains";
 import type { ArmedExit } from "../types";
 import { claimOnce, getExit, saveExit, watchAdd, watchGet } from "../store";
 import { armMessage } from "./message";
+import { tradeInTx } from "../engine/base";
 
 export const EXIT = () => process.env.NEXT_PUBLIC_EXIT_ADDRESS as Hex | undefined;
 const USDC = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
@@ -94,17 +95,17 @@ async function kyberRoute(token: string, amount: bigint, sender: string) {
 
 // A watched Base wallet moved an armed token out. Fire the matching exits.
 // A real sale moves WETH or USDC in the same transaction. A plain transfer to another wallet doesn't.
-const WETH = "0x4200000000000000000000000000000000000006";
-async function isSale(tx: string) {
-  const rc = await pub().getTransactionReceipt({ hash: tx as Hex }).catch(() => null);
-  return Boolean(rc?.logs.some((l) => [WETH, USDC.toLowerCase()].includes(l.address.toLowerCase())));
+// The watched wallet itself must sell this token and receive ETH, WETH or USDC for it, in this transaction.
+async function isSale(tx: string, token: string, wallet: string) {
+  const t = await tradeInTx(tx, token, wallet);
+  return Boolean(t && t.side === "sell" && (t.eth > 0 || t.usdc > 0));
 }
 
 export async function onBaseActivity(p: { from: string; token: string; tx: string; ts: number }) {
   const exit = EXIT();
   const key = process.env.KEEPER_PRIVATE_KEY as Hex | undefined;
   if (!exit || !key) return [];
-  if (!(await isSale(p.tx))) return [];
+  if (!(await isSale(p.tx, p.token, p.from))) return [];
   const fired: string[] = [];
   for (const id of await watchGet(p.from.toLowerCase())) {
     const e = await getExit(id);

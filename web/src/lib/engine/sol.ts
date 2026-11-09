@@ -134,6 +134,7 @@ export async function recentBuys(wallet: string, exclude?: string, max = 10) {
     if (t.feePayer !== wallet) continue;
     const got = (t.tokenTransfers || []).find((x) => x.toUserAccount === wallet && x.mint !== WSOL && !STABLES.has(x.mint));
     if (!got || got.mint === exclude) continue;
+    if (tradeOf(t, got.mint)?.side !== "buy") continue; // a transfer or airdrop in, not a buy
     const prev = buys.find((b) => b.mint === got.mint);
     if (prev) prev.ts = Math.min(prev.ts, t.timestamp);
     else buys.push({ mint: got.mint, ts: t.timestamp });

@@ -78,22 +78,10 @@ const USDC = "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913";
 type Receipt = { from: string; blockNumber: string; status: string; logs: Log[] };
 
 // Side comes from the signer's own token flow; price from the ETH or USDC that moved in the same tx.
-async function trades(token: string, fromB: number, toB: number, only?: string): Promise<Trade[]> {
-  const t = token.toLowerCase();
-  const tl = only
-    ? [...(await logs({ address: t, topics: [TRANSFER, pad(only)] }, fromB, toB)), ...(await logs({ address: t, topics: [TRANSFER, null, pad(only)] }, fromB, toB))]
-    : await logs({ address: t, topics: [TRANSFER] }, fromB, toB);
-  if (!tl.length) return [];
-  const dec = await decimals(t);
-  const hashes = [...new Set(tl.map((l) => l.transactionHash))].slice(0, 400);
-  const rcs: Receipt[] = [];
-  for (let i = 0; i < hashes.length; i += 40) {
-    rcs.push(...(await rpcBatch<Receipt>(hashes.slice(i, i + 40).map((h) => ({ method: "eth_getTransactionReceipt", params: [h] })))));
-  }
-  const out: Trade[] = [];
-  for (let i = 0; i < hashes.length; i++) {
-    const rc = rcs[i];
-    if (!rc || rc.status !== "0x1") continue;
+// One receipt, one wallet's trade in one token: the signer's token balance must move, and the matching ETH, WETH
+// or USDC leg must move the other way. Anything else (a transfer, an airdrop, an unrelated swap) is not a trade.
+function parseReceipt(rc: Receipt, t: string): { signer: string; side: "buy" | "sell"; tokNet: bigint; eth: bigint; usdc: bigint } | null {
+  if (!rc || rc.status !== "0x1") return null;
     const signer = rc.from.toLowerCase();
     let tokNet = 0n, ethIn = 0n, ethOut = 0n, usdIn = 0n, usdOut = 0n;
     for (const l of rc.logs) {
@@ -114,11 +102,41 @@ async function trades(token: string, fromB: number, toB: number, only?: string):
         if (addr(l.topics[2]) === signer) usdOut += BigInt(l.data);
       }
     }
-    if (tokNet === 0n) continue; // the signer's balance of this token didn't change: not their trade
+    if (tokNet === 0n) return null; // the signer's balance of this token didn't change: not their trade
     const side = tokNet > 0n ? "buy" : "sell";
     const eth = side === "buy" ? ethIn : ethOut;
     const usdc = side === "buy" ? usdIn : usdOut;
-    if (eth === 0n && usdc === 0n) continue; // a transfer, not a trade
+    if (eth === 0n && usdc === 0n) return null; // a transfer, not a trade
+    return { signer, side, tokNet, eth, usdc };
+}
+
+// The trade a given wallet made in a token in one transaction, or null if it wasn't a real buy or sell by them.
+export async function tradeInTx(tx: string, token: string, wallet: string) {
+  const rc = await rpc<Receipt>("eth_getTransactionReceipt", [tx]).catch(() => null);
+  if (!rc) return null;
+  const p = parseReceipt(rc, token.toLowerCase());
+  if (!p || p.signer !== wallet.toLowerCase()) return null;
+  return { side: p.side, eth: Number(p.eth) / 1e18, usdc: Number(p.usdc) / 1e6 };
+}
+
+async function trades(token: string, fromB: number, toB: number, only?: string): Promise<Trade[]> {
+  const t = token.toLowerCase();
+  const tl = only
+    ? [...(await logs({ address: t, topics: [TRANSFER, pad(only)] }, fromB, toB)), ...(await logs({ address: t, topics: [TRANSFER, null, pad(only)] }, fromB, toB))]
+    : await logs({ address: t, topics: [TRANSFER] }, fromB, toB);
+  if (!tl.length) return [];
+  const dec = await decimals(t);
+  const hashes = [...new Set(tl.map((l) => l.transactionHash))].slice(0, 400);
+  const rcs: Receipt[] = [];
+  for (let i = 0; i < hashes.length; i += 40) {
+    rcs.push(...(await rpcBatch<Receipt>(hashes.slice(i, i + 40).map((h) => ({ method: "eth_getTransactionReceipt", params: [h] })))));
+  }
+  const out: Trade[] = [];
+  for (let i = 0; i < hashes.length; i++) {
+    const p = parseReceipt(rcs[i], t);
+    if (!p) continue;
+    const { signer, side, tokNet, eth, usdc } = p;
+    const rc = rcs[i];
     out.push({
       wallet: signer,
       side,
@@ -167,14 +185,20 @@ export const adapter = {
     const now = Math.floor(Date.now() / 1000);
     const [a, b] = await Promise.all([blockAt(now - 3 * 3600), blockAt(now)]);
     const inc = await logs({ topics: [TRANSFER, null, pad(wallet)] }, a, b).catch(() => [] as Log[]);
-    const seen = new Map<string, number>();
+    // Incoming transfers include airdrops and spam, so keep only tokens this wallet actually bought: it sent the
+    // transaction and paid ETH, WETH or USDC for the token.
+    const seen = new Map<string, { blk: number; tx: string }>();
     for (const l of inc) {
       const tok = l.address.toLowerCase();
-      if (tok === WETH || tok === exclude.toLowerCase() || seen.has(tok)) continue;
-      seen.set(tok, num(l.blockNumber));
+      if (tok === WETH || tok === USDC || tok === exclude.toLowerCase() || seen.has(tok)) continue;
+      seen.set(tok, { blk: num(l.blockNumber), tx: l.transactionHash });
     }
     const out: { mint: string; ts: number }[] = [];
-    for (const [mint, blk] of [...seen].slice(0, 8)) out.push({ mint, ts: await tsOf(blk) });
+    for (const [mint, v] of [...seen].slice(0, 16)) {
+      const t = await tradeInTx(v.tx, mint, wallet).catch(() => null);
+      if (t?.side === "buy") out.push({ mint, ts: await tsOf(v.blk) });
+      if (out.length >= 8) break;
+    }
     return out;
   },
   quoteUsd: ethUsd,
