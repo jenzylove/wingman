@@ -1,6 +1,6 @@
 import { randomBytes, timingSafeEqual } from "crypto";
 import type { ArmedExit } from "../types";
-import { claimOnce, getExit, kvDel, kvGet, kvSet, saveExit, watchAdd, watchGet, allWatched } from "../store";
+import { armedOn, claimOnce, getExit, kvDel, kvGet, kvSet, saveExit, watchAdd, watchGet, allWatched } from "../store";
 import * as sx from "./solana";
 import { tradeOf } from "../engine/sol";
 
@@ -24,9 +24,12 @@ function keyOk(p: Priv, key: unknown) {
   return timingSafeEqual(Buffer.from(key), Buffer.from(p.key));
 }
 
+export const ALREADY_ARMED = "You already have an exit armed on this token. Cancel it in My exits first, then arm a new one.";
+
 export async function ride(b: { owner: string; mint: string; sol: number; slippageBps?: number; watch: string[]; cardId?: string }) {
   if (!isSol(b.owner) || !isSol(b.mint)) throw new FlowError("Bad wallet or token address.");
   if (!(b.sol >= 0.001 && b.sol <= 5)) throw new FlowError("Ride between 0.001 and 5 SOL.");
+  if (await armedOn(b.owner, b.mint)) throw new FlowError(ALREADY_ARMED);
   const watch = cleanWatch(b.watch);
   const slip = clampSlip(b.slippageBps, 1500);
   const r = await sx.buildRide({ owner: b.owner, mint: b.mint, lamports: String(Math.round(b.sol * 1e9)), slippageBps: slip });
@@ -41,6 +44,7 @@ export async function ride(b: { owner: string; mint: string; sol: number; slippa
 // Arming a token you already hold: just the nonce account first.
 export async function holdArm(b: { owner: string; mint: string; watch: string[]; cardId?: string }) {
   if (!isSol(b.owner) || !isSol(b.mint)) throw new FlowError("Bad wallet or token address.");
+  if (await armedOn(b.owner, b.mint)) throw new FlowError(ALREADY_ARMED);
   const watch = cleanWatch(b.watch);
   const r = await sx.prepareNonce(b.owner);
   const id = randomBytes(8).toString("hex");

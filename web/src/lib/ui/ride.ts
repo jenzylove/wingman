@@ -182,7 +182,7 @@ export async function rideBase(input: BaseRideInput, onStep: (s: RideStep) => vo
   const amount = await readContract(wagmiConfig, { address: token, abi: baseErc20, functionName: "balanceOf", args: [owner] });
   if (amount === 0n) throw new Error("No tokens in the wallet to protect yet.");
   onStep("locking");
-  const { floor } = await baseApi<{ floor: string }>({ action: "floor", token, amount: amount.toString() });
+  const { floor } = await baseApi<{ floor: string }>({ action: "floor", owner, token, amount: amount.toString() });
   const ah = await writeContract(wagmiConfig, { address: token, abi: baseErc20, functionName: "approve", args: [exit, amount] });
   await waitForTransactionReceipt(wagmiConfig, { hash: ah });
   onStep("sign_exit");

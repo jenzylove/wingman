@@ -75,6 +75,11 @@ export const getExit = (id: string) => kvGet<ArmedExit>(`exit:${id}`);
 export async function exitsOf(owner: string) {
   return ((await Promise.all((await listRange(`exits:${owner}`, 100)).map(getExit))).filter(Boolean) as ArmedExit[]).filter((e) => e.status !== "pending");
 }
+// One armed exit per wallet and token: a second would try to sell tokens the first already sold.
+export async function armedOn(owner: string, token: string) {
+  const t = token.toLowerCase();
+  return (await exitsOf(owner)).some((e) => e.status === "armed" && e.token.toLowerCase() === t);
+}
 export async function recentExits(n = 50) {
   return ((await Promise.all((await listRange("exits", n)).map(getExit))).filter(Boolean) as ArmedExit[]).filter((e) => e.status !== "pending");
 }

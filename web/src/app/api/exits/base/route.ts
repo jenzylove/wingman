@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { BaseFlowError, buyQuote, recordArm } from "@/lib/exits/base";
+import { armedOn } from "@/lib/store";
+import { ALREADY_ARMED } from "@/lib/exits/flow";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -7,6 +9,8 @@ export const maxDuration = 60;
 export async function POST(req: Request) {
   const b = await req.json().catch(() => ({}));
   try {
+    if ((b.action === "quote" || b.action === "floor") && /^0x[a-fA-F0-9]{40}$/.test(String(b.owner)) && (await armedOn(String(b.owner).toLowerCase(), String(b.token))))
+      return NextResponse.json({ error: ALREADY_ARMED }, { status: 422 });
     if (b.action === "quote") return NextResponse.json(await buyQuote({ taker: b.owner, token: b.token, ethWei: String(b.ethWei), slippageBps: Math.min(3000, Math.max(50, b.slippageBps ?? 1500)) }));
     if (b.action === "floor") {
       if (!/^0x[a-fA-F0-9]{40}$/.test(String(b.token)) || !/^\d+$/.test(String(b.amount))) return NextResponse.json({ error: "Bad token or amount." }, { status: 400 });
