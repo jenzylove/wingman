@@ -53,7 +53,7 @@ Nothing was cut in the plan; see "As built" at the top for what shipped.
 | Launch potential | 25% | Every degen rides calls. Stakers earn from exits. Cards spread themselves. |
 | Originality | 20% | No product finds a caller's crew by behaviour and exits when the crew sells. Nothing covers callers on Base. |
 | Craft and UX | 15% | Paste, card, Ride, receipt. One flow. |
-| Vibecoding leverage | 10% | Built end to end with Claude Code. Build log in docs/BUILD_LOG.md. ERC-8004 identity for the build agent. |
+| Vibecoding leverage | 10% | Built end to end with Claude Code. Build log in docs/BUILD_LOG.md. (Planned ERC-8004 identity for the build agent was not built.) |
 
 ## Claims and proof
 | Claim | Proof |

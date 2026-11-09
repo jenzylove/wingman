@@ -18,3 +18,4 @@
 | Nov 9 14:10 | Solana exits rebroadcast until they land and stay armed if dropped | web/src/lib/exits/solana.ts |
 | Nov 9 16:30 | Stablecoin legs counted in P&L on both chains; already wrapped SOL priced correctly | web/scripts/check-usdc-paths.ts |
 | Nov 9 17:15 | Only real swaps count as trades (a buy pays, a sell receives); liquidity moves no longer fire exits; one armed exit per wallet and token; 10 tests passing | web/src/lib/engine/sol.test.ts |
+| Nov 9 19:58 | Busy tokens read properly: the window before the post is sliced and every insider's own trades are read, so crew sells are not missed; failed reads say so; verdict matches holdings; other EVM chains get a clear answer; proof lists only real sale exits | web/src/lib/engine/card.ts |
