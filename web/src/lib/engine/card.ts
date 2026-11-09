@@ -57,7 +57,18 @@ async function learnCrew(a: Adapter, handle: string, wallets: string[], exclude:
       byMint.set(b.mint, await a.windowTrades(b.mint, b.ts - CO_BUY_WINDOW, b.ts + CO_BUY_WINDOW));
     }),
   );
-  const stats = repeatStats(buys, byMint, new Set(wallets));
+  const fresh = repeatStats(buys, byMint, new Set(wallets));
+  // Crew is remembered per caller for good: once a wallet has shown up as crew it stays crew, even after
+  // the caller's recent tokens move on. We keep the strongest evidence seen for each wallet.
+  const memKey = `crewmem:${handle}`;
+  const mem = new Map((await kvGet<[string, { hits: number; of: number; offsets: number[] }][]>(memKey)) || []);
+  for (const [w, st] of fresh) {
+    const prev = mem.get(w);
+    if (!prev || st.hits / Math.max(1, st.of) >= prev.hits / Math.max(1, prev.of)) mem.set(w, st);
+  }
+  const keep = [...mem].filter(([w, st]) => fresh.has(w) || (st.hits >= 3 && st.hits / Math.max(1, st.of) >= 0.3)).slice(-300);
+  await kvSet(memKey, keep);
+  const stats = new Map(keep);
   await kvSet(key, { stats: [...stats], tokens: byMint.size }, 3600);
   return { stats, tokens: byMint.size };
 }
