@@ -58,7 +58,7 @@ async function helius(path: string): Promise<HTx[]> {
     }
     if (process.env.WM_DEBUG) console.error("helius retry", i, r?.status, path.slice(0, 120));
     lastStatus = r?.status ?? 0;
-    await sleep(600 * (i + 1));
+    await sleep(r?.status === 429 ? 1000 * (i + 1) : 600 * (i + 1));
   }
   // Still failing: count it so the card can say part of the read failed, and carry on with what we have.
   readFailures++;
