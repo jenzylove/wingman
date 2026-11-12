@@ -10,12 +10,16 @@ const transfer = parseAbiItem("event Transfer(address indexed from, address inde
 
 // Scans new Base blocks for armed tokens leaving any watched wallet, then fires those exits.
 // Called every few seconds by the keeper loop.
+// Remembered for 30 seconds per server instance: the keeper polls every few seconds, the database shouldn't.
+let idsCache: { ids: string[]; at: number } = { ids: [], at: 0 };
+
 export async function GET(req: Request) {
   const want = process.env.HOOK_SECRET;
   if (!want || req.headers.get("x-wingman-key") !== want) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   // Nothing armed on Base: one cheap read and done. The keeper polls every few seconds, so this path must cost
   // almost nothing.
-  const ids = await armedBaseIds();
+  if (Date.now() - idsCache.at > 30_000) idsCache = { ids: await armedBaseIds(), at: Date.now() };
+  const ids = idsCache.ids;
   if (!ids.length) return NextResponse.json({ ok: true, armed: 0 });
   if (!(await claimOnce("cron:base", 3))) return NextResponse.json({ ok: true, skipped: "another run is in progress" });
   const c = pub();
