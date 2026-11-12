@@ -6,18 +6,27 @@ const TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TO
 const mem = new Map<string, string>();
 const memLists = new Map<string, string[]>();
 
+// If the store refuses calls (quota, outage), fall back to memory for a minute instead of failing every request.
+let downUntil = 0;
 async function redis(cmd: (string | number)[]) {
-  const r = await fetch(URL!, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${TOKEN}`, "content-type": "application/json" },
-    body: JSON.stringify(cmd),
-    cache: "no-store",
-  });
-  if (!r.ok) throw new Error(`store ${r.status}`);
-  return (await r.json()).result;
+  try {
+    const r = await fetch(URL!, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${TOKEN}`, "content-type": "application/json" },
+      body: JSON.stringify(cmd),
+      cache: "no-store",
+    });
+    const j = await r.json().catch(() => null);
+    if (!r.ok || !j || j.error) throw new Error(`store ${r.status} ${j?.error || ""}`);
+    return j.result;
+  } catch (e) {
+    downUntil = Date.now() + 60_000;
+    console.error("store unavailable, using memory for 60s:", String(e).slice(0, 160));
+    return null;
+  }
 }
 
-export const storeEnabled = () => Boolean(URL && TOKEN);
+export const storeEnabled = () => Boolean(URL && TOKEN) && Date.now() > downUntil;
 
 export async function kvGet<T>(key: string): Promise<T | null> {
   const v = storeEnabled() ? await redis(["GET", key]) : mem.get(key);
@@ -62,9 +71,28 @@ export async function addClaim(c: Claim) {
   await kvSet(`claims:${c.handle.toLowerCase()}`, all);
 }
 
+// Armed Base exits are kept in one small set, so the keeper reads one key instead of every recent exit.
+export async function armedBaseIds(): Promise<string[]> {
+  if (!storeEnabled()) return [...(memLists.get("armed:base") || [])];
+  return ((await redis(["SMEMBERS", "armed:base"])) as string[] | null) || [];
+}
+async function trackArmedBase(e: ArmedExit) {
+  if (e.chain !== "base") return;
+  const on = e.status === "armed";
+  if (!storeEnabled()) {
+    const s = new Set(memLists.get("armed:base") || []);
+    if (on) s.add(e.id);
+    else s.delete(e.id);
+    memLists.set("armed:base", [...s]);
+    return;
+  }
+  await redis([on ? "SADD" : "SREM", "armed:base", e.id]);
+}
+
 export async function saveExit(e: ArmedExit) {
   const isNew = !(await kvGet(`exit:${e.id}`));
   await kvSet(`exit:${e.id}`, e);
+  await trackArmedBase(e);
   if (isNew) {
     await listPush(`exits:${e.owner}`, e.id);
     await listPush("exits", e.id);

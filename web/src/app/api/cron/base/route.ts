@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { parseAbiItem, type Hex } from "viem";
 import { onBaseActivity, pub } from "@/lib/exits/base";
-import { claimOnce, kvGet, kvSet, recentExits } from "@/lib/store";
+import { armedBaseIds, claimOnce, getExit, kvGet, kvSet } from "@/lib/store";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -13,6 +13,10 @@ const transfer = parseAbiItem("event Transfer(address indexed from, address inde
 export async function GET(req: Request) {
   const want = process.env.HOOK_SECRET;
   if (!want || req.headers.get("x-wingman-key") !== want) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  // Nothing armed on Base: one cheap read and done. The keeper polls every few seconds, so this path must cost
+  // almost nothing.
+  const ids = await armedBaseIds();
+  if (!ids.length) return NextResponse.json({ ok: true, armed: 0 });
   if (!(await claimOnce("cron:base", 3))) return NextResponse.json({ ok: true, skipped: "another run is in progress" });
   const c = pub();
   const head = await c.getBlockNumber();
@@ -20,7 +24,7 @@ export async function GET(req: Request) {
   const from = last + 1n > head - 1500n ? last + 1n : head - 1500n;
   if (from > head) return NextResponse.json({ ok: true, from: from.toString(), head: head.toString(), fired: [] });
 
-  const armed = (await recentExits(200)).filter((e) => e.chain === "base" && e.status === "armed");
+  const armed = (await Promise.all(ids.map(getExit))).filter((e) => e && e.chain === "base" && e.status === "armed") as NonNullable<Awaited<ReturnType<typeof getExit>>>[];
   const byToken = new Map<string, Set<string>>();
   for (const e of armed) {
     const s = byToken.get(e.token) || new Set<string>();
